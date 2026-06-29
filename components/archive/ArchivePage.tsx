@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { articles, getArticleBySlug } from "@/lib/articles";
+import { articles } from "@/lib/articles";
 
 type Locale = "fa" | "en";
 
@@ -290,16 +290,18 @@ export default function ArchivePage({ locale = "fa" }: { locale?: Locale }) {
   const totalEntries = encyclopediaParts.reduce((sum, part) => sum + part.entries.length, 0);
   const visibleCount = filteredParts.reduce((sum, part) => sum + part.entries.length, 0);
 
-  const selectedEntry = useMemo(() => {
-    if (activeEntryNo == null) return null;
-    for (const part of encyclopediaParts) {
-      const found = part.entries.find((entry) => entry.no === activeEntryNo);
-      if (found) {
-        return { ...found, partFa: part.faTitle, partEn: part.enTitle, partNumber: part.number };
-      }
-    }
-    return null;
-  }, [activeEntryNo]);
+  const selectedEntry =
+    activeEntryNo == null
+      ? null
+      : (() => {
+          for (const part of encyclopediaParts) {
+            const found = part.entries.find((entry) => entry.no === activeEntryNo);
+            if (found) {
+              return { ...found, partFa: part.faTitle, partEn: part.enTitle, partNumber: part.number };
+            }
+          }
+          return null;
+        })();
 
   const strings = isFa
     ? {
