@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { type ElementType, useEffect, useMemo, useState } from "react";
+import { useSession } from "next-auth/react";
 import { type ArticleLocale, getLocalizedArticle } from "@/lib/articles";
 
 type ArticlePageViewProps = {
@@ -149,6 +150,15 @@ function buildWordDocumentXml(text: string) {
 </w:document>`;
 }
 
+function localizeDigits(value: string | number, locale: string) {
+  if (locale !== "fa") {
+    return String(value);
+  }
+
+  const persianDigits = ["۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹"];
+  return String(value).replace(/\d/g, (digit) => persianDigits[Number(digit)]);
+}
+
 function buildNotesDocxBlob(text: string) {
   const documentXml = buildWordDocumentXml(text);
   const zipFiles = [
@@ -171,10 +181,10 @@ function buildNotesDocxBlob(text: string) {
 }
 
 export default function ArticlePageView({ locale, slug }: ArticlePageViewProps) {
+  const { status, data: session } = useSession();
   const article = getLocalizedArticle(slug, locale);
   const isPersian = locale === "fa";
   const storageKey = `article-notes-${locale}-${slug}`;
-  const [userRating, setUserRating] = useState(0);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window === "undefined") {
       return false;
@@ -206,6 +216,9 @@ export default function ArticlePageView({ locale, slug }: ArticlePageViewProps) 
       return "";
     }
   });
+  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
+  const [feedbackType, setFeedbackType] = useState<"success" | "error" | null>(null);
+  const [isSavingNote, setIsSavingNote] = useState(false);
 
   const sections = useMemo<Section[]>(() => {
     if (!article) return [];
@@ -257,25 +270,74 @@ export default function ArticlePageView({ locale, slug }: ArticlePageViewProps) 
     }
   }, [isDarkMode]);
 
+
+  useEffect(() => {
+    if (!feedbackMessage) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => setFeedbackMessage(null), 3600);
+    return () => window.clearTimeout(timeout);
+  }, [feedbackMessage]);
+
   const handleTextSelection = () => {
-    if (!isNotesEnabled) {
-      return;
-    }
-
-    const selection = window.getSelection();
-    const selectedText = selection?.toString().trim();
-
-    if (!selectedText) {
-      return;
-    }
-
-    setNotesText((previous) => `${previous}${previous ? "\n\n" : ""}• ${selectedText}`);
-    selection?.removeAllRanges();
+    // no highlight selection in this simplified note mode
   };
 
-  const handleExportNotes = () => {
+  const saveNote = async () => {
     if (!notesText.trim()) {
+      setFeedbackMessage(isPersian ? "ابتدا متنی برای ذخیره وارد کنید." : "Enter some note text first.");
+      setFeedbackType("error");
       return;
+    }
+    if (status !== "authenticated") {
+      setFeedbackMessage(isPersian ? "برای ذخیره کردن یادداشت باید وارد شوید." : "Sign in to save notes.");
+      setFeedbackType("error");
+      return;
+    }
+
+    setIsSavingNote(true);
+
+    const savePayload = { articleSlug: slug, content: notesText };
+    const publicNotePayload = {
+      name: session?.user?.name?.trim() || session?.user?.email || "Anonymous",
+      email: session?.user?.email || undefined,
+      articleSlug: slug,
+      content: notesText,
+    };
+
+    try {
+      const [articleResponse, marginalResponse] = await Promise.all([
+        fetch("/api/article/notes", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(savePayload),
+        }),
+        fetch("/api/marginal-notes", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(publicNotePayload),
+        }),
+      ]);
+
+      if (articleResponse.ok && marginalResponse.ok) {
+        setFeedbackMessage(isPersian ? "یادداشت شما در حاشیه نگاری ذخیره شد." : "Your note has been saved to Marginal Notes.");
+        setFeedbackType("success");
+      } else if (articleResponse.ok && !marginalResponse.ok) {
+        setFeedbackMessage(isPersian ? "یادداشت شما ذخیره شد، اما در فید حاشیه نمایش داده نشد." : "Note saved, but it could not be published to Marginal Notes.");
+        setFeedbackType("error");
+      } else if (!articleResponse.ok && marginalResponse.ok) {
+        setFeedbackMessage(isPersian ? "یادداشت در فید حاشیه منتشر شد، اما ذخیره محلی مقاله با خطا مواجه شد." : "Published to Marginal Notes, but article note save failed.");
+        setFeedbackType("error");
+      } else {
+        setFeedbackMessage(isPersian ? "ذخیره یادداشت با خطا مواجه شد." : "Unable to save note.");
+        setFeedbackType("error");
+      }
+    } catch {
+      setFeedbackMessage(isPersian ? "خطا در ارسال یادداشت." : "Note save failed.");
+      setFeedbackType("error");
+    } finally {
+      setIsSavingNote(false);
     }
 
     const blob = buildNotesDocxBlob(notesText.trim());
@@ -306,10 +368,10 @@ export default function ArticlePageView({ locale, slug }: ArticlePageViewProps) 
     const articleHtml = articleSections
       .map((section) => {
         if (section.kind === "heading") {
-          return `<h2>${escapeHtml(section.text)}</h2>`;
+          return `<h2>${escapeHtml(localizeDigits(section.text, locale))}</h2>`;
         }
 
-        return `<div><p>${escapeHtml(section.text)}</p></div>`;
+        return `<div><p>${escapeHtml(localizeDigits(section.text, locale))}</p></div>`;
       })
       .join("");
 
@@ -317,7 +379,7 @@ export default function ArticlePageView({ locale, slug }: ArticlePageViewProps) 
 <html lang="${locale}">
   <head>
     <meta charset="utf-8" />
-    <title>${escapeHtml(article.title)}</title>
+    <title>${escapeHtml(localizeDigits(article.title, locale))}</title>
     <style>
       body { font-family: Tahoma, Arial, sans-serif; line-height: 1.8; color: #222; padding: 32px; background: #f7f1ec; }
       h1, h2, h3 { color: #221f1f; font-weight: 800; }
@@ -326,8 +388,8 @@ export default function ArticlePageView({ locale, slug }: ArticlePageViewProps) 
     </style>
   </head>
   <body>
-    <h1>${escapeHtml(article.title)}</h1>
-    <p><strong>${escapeHtml(article.description)}</strong></p>
+    <h1>${escapeHtml(localizeDigits(article.title, locale))}</h1>
+    <p><strong>${escapeHtml(localizeDigits(article.description, locale))}</strong></p>
     ${articleHtml}
   </body>
 </html>`;
@@ -341,10 +403,19 @@ export default function ArticlePageView({ locale, slug }: ArticlePageViewProps) 
     URL.revokeObjectURL(url);
   };
 
+  const handleClearNotes = () => {
+    setNotesText("");
+    try {
+      window.localStorage.removeItem(storageKey);
+    } catch {
+      // ignore storage failures
+    }
+  };
+
   return (
     <main
       dir={isPersian ? "rtl" : "ltr"}
-      style={{ padding: 32, maxWidth: 1100, margin: "0 auto", fontFamily: "Vazirmatn, Tahoma, Arial, sans-serif", lineHeight: 1.8, textAlign: isPersian ? "right" : "left", color: isDarkMode ? "#e0e0e0" : "#000", minHeight: "100vh", transition: "color 0.3s ease" }}
+      style={{ padding: 32, maxWidth: 1100, margin: "0 auto", fontFamily: "Vazirmatn, Tahoma, Arial, sans-serif", lineHeight: 1.8, textAlign: isPersian ? "right" : "left", color: isDarkMode ? "#e0e0e0" : "#000", background: isDarkMode ? "#0b0e16" : undefined, minHeight: "100vh", transition: "background-color 0.3s ease, color 0.3s ease" }}
     >
       <div style={{ marginBottom: 24 }}>
         <Link href={`/${locale}/archive`} style={{ color: "#a61922", textDecoration: "none", fontWeight: 700 }}>
@@ -352,10 +423,10 @@ export default function ArticlePageView({ locale, slug }: ArticlePageViewProps) 
         </Link>
       </div>
 
-      <div style={{ border: "1px solid rgba(0,0,0,0.04)", borderRadius: 18, padding: 24, background: "#f6ebdc" }}>
+      <div style={{ border: isDarkMode ? "1px solid #232b38" : "1px solid rgba(0,0,0,0.04)", borderRadius: 18, padding: 24, background: isDarkMode ? "#10151f" : "#f6ebdc" }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 16, alignItems: "center", marginBottom: 16, flexWrap: "wrap" }}>
-          <span style={{ display: "inline-flex", padding: "6px 10px", borderRadius: 999, background: "#fbf7f1", color: "#7d1017", fontWeight: 800, fontSize: 13 }}>
-            {article.category}
+          <span style={{ display: "inline-flex", padding: "6px 10px", borderRadius: 999, background: isDarkMode ? "#1e2733" : "#fbf7f1", color: isDarkMode ? "#d0d0d0" : "#7d1017", fontWeight: 800, fontSize: 13 }}>
+            {localizeDigits(article.category, locale)}
           </span>
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
@@ -368,18 +439,18 @@ export default function ArticlePageView({ locale, slug }: ArticlePageViewProps) 
               suppressHydrationWarning
               style={{ position: "relative", display: "inline-flex", alignItems: "center", width: 50, height: 26, borderRadius: 999, background: isDarkMode ? "#3a3a3a" : "#ddd", border: "none", cursor: "pointer", padding: 0, transition: "background-color 0.3s ease" }}
             >
-              <span style={{ position: "absolute", width: 22, height: 22, borderRadius: 999, background: "#fff", left: isDarkMode ? 24 : 2, transition: "left 0.3s ease", boxShadow: "0 2px 4px rgba(0,0,0,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }} />
+              <span style={{ position: "absolute", width: 22, height: 22, borderRadius: 999, background: isDarkMode ? "#161b24" : "#fff", left: isDarkMode ? 24 : 2, transition: "left 0.3s ease", boxShadow: "0 2px 4px rgba(0,0,0,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }} />
             </button>
             <Link href={`/${oppositeLocale}/articles/${slug}`} style={{ padding: "8px 12px", borderRadius: 999, border: `1px solid ${isDarkMode ? "#333" : "#eadfda"}`, color: isDarkMode ? "#e0e0e0" : "#7d1017", textDecoration: "none", fontWeight: 700 }}>
-              {locale === "fa" ? "نسخه انگلیسی" : "Persian version"}
+              {locale === "fa" ? "English version" : "نسخه فارسی"}
             </Link>
           </div>
         </div>
 
-        <h1 style={{ margin: "0 0 8px", fontSize: 32, lineHeight: 1.4, color: isDarkMode ? "#f0f0f0" : "#221f1f", fontWeight: 800 }}>{article.title}</h1>
-        <p style={{ margin: "0 0 16px", color: isDarkMode ? "#aaa" : "#686868", fontSize: 15 }}>{article.description}</p>
+        <h1 style={{ margin: "0 0 8px", fontSize: 32, lineHeight: 1.4, color: isDarkMode ? "#f0f0f0" : "#221f1f", fontWeight: 800 }}>{localizeDigits(article.title, locale)}</h1>
+        <p style={{ margin: "0 0 16px", color: isDarkMode ? "#aaa" : "#686868", fontSize: 15 }}>{localizeDigits(article.description, locale)}</p>
 
-        <div style={{ marginBottom: 24, display: "flex", justifyContent: "flex-end" }}>
+        <div style={{ marginBottom: 24, display: "flex", justifyContent: "flex-start", gap: 12, flexWrap: "wrap" }}>
           <button
             type="button"
             onClick={downloadArticle}
@@ -387,48 +458,32 @@ export default function ArticlePageView({ locale, slug }: ArticlePageViewProps) 
           >
             {isPersian ? "دانلود خروجی مقاله" : "Download article"}
           </button>
+          <Link
+            href="/profile"
+            style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "10px 16px", borderRadius: 999, background: "#fff", color: "#a61922", border: "1px solid rgba(166,25,34,0.22)", textDecoration: "none", fontWeight: 800, boxShadow: "0 8px 18px rgba(166,25,34,0.12)" }}
+          >
+            {isPersian ? "حاشیه نگاری" : "Marginal Notes"}
+          </Link>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12, marginBottom: 24 }}>
-          <div style={{ border: `1px solid ${isDarkMode ? "#333" : "#eadfda"}`, borderRadius: 12, padding: 12, background: isDarkMode ? "#1a1a1a" : "#f8efe3" }}>
+          <div style={{ border: `1px solid ${isDarkMode ? "#28313f" : "#eadfda"}`, borderRadius: 12, padding: 12, background: isDarkMode ? "#151a24" : "#f8efe3" }}>
             <strong style={{ display: "block", color: isDarkMode ? "#ff7a8a" : "#7d1017", marginBottom: 4 }}>
               {locale === "fa" ? "نویسنده" : "Author"}
             </strong>
-            <span style={{ color: isDarkMode ? "#d0d0d0" : "#000" }}>{article.author}</span>
+            <span style={{ color: isDarkMode ? "#d0d0d0" : "#000" }}>{localizeDigits(article.author, locale)}</span>
           </div>
-          <div style={{ border: `1px solid ${isDarkMode ? "#333" : "#eadfda"}`, borderRadius: 12, padding: 12, background: isDarkMode ? "#1a1a1a" : "#f8efe3" }}>
+          <div style={{ border: `1px solid ${isDarkMode ? "#28313f" : "#eadfda"}`, borderRadius: 12, padding: 12, background: isDarkMode ? "#151a24" : "#f8efe3" }}>
             <strong style={{ display: "block", color: isDarkMode ? "#ff7a8a" : "#7d1017", marginBottom: 4 }}>
               {locale === "fa" ? "صفحه شروع" : "Start page"}
             </strong>
-            <span style={{ color: isDarkMode ? "#d0d0d0" : "#000" }}>{article.startPage}</span>
+            <span style={{ color: isDarkMode ? "#d0d0d0" : "#000" }}>{localizeDigits(article.startPage, locale)}</span>
           </div>
-          <div style={{ border: `1px solid ${isDarkMode ? "#333" : "#eadfda"}`, borderRadius: 12, padding: 12, background: isDarkMode ? "#1a1a1a" : "#f8efe3" }}>
+          <div style={{ border: `1px solid ${isDarkMode ? "#28313f" : "#eadfda"}`, borderRadius: 12, padding: 12, background: isDarkMode ? "#151a24" : "#f8efe3" }}>
             <strong style={{ display: "block", color: isDarkMode ? "#ff7a8a" : "#7d1017", marginBottom: 4 }}>
               {locale === "fa" ? "دسته‌بندی" : "Category"}
             </strong>
-            <span style={{ color: isDarkMode ? "#d0d0d0" : "#000" }}>{article.category}</span>
-          </div>
-        </div>
-
-        <div style={{ border: `1px solid ${isDarkMode ? "#333" : "#eadfda"}`, borderRadius: 14, padding: 14, background: isDarkMode ? "#1a1a1a" : "#f8efe3", marginBottom: 20 }}>
-          <div style={{ fontWeight: 800, color: isDarkMode ? "#ff7a8a" : "#7d1017", marginBottom: 8 }}>
-            {isPersian ? "امتیازدهی به این مدخل" : "Rate this entry"}
-          </div>
-          <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-            {[1, 2, 3, 4, 5].map((value) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setUserRating(value)}
-                style={{ border: "none", background: "transparent", cursor: "pointer", fontSize: 24, color: value <= userRating ? "#f1b444" : isDarkMode ? "#555" : "#d7d0c7" }}
-                aria-label={`${value} star`}
-              >
-                ★
-              </button>
-            ))}
-            <span style={{ marginRight: 8, color: "#686868", fontSize: 14 }}>
-              {userRating > 0 ? `${userRating}/5` : (isPersian ? "هنوز امتیازی ثبت نشده" : "No rating yet")}
-            </span>
+            <span style={{ color: isDarkMode ? "#d0d0d0" : "#000" }}>{localizeDigits(article.category, locale)}</span>
           </div>
         </div>
 
@@ -443,7 +498,7 @@ export default function ArticlePageView({ locale, slug }: ArticlePageViewProps) 
                     key={section.id}
                     style={{ margin: "24px 0 10px", color: isDarkMode ? "#f0f0f0" : "#221f1f", fontWeight: 800, lineHeight: 1.4, fontSize: headingLevel === 3 ? "1.05rem" : "1.25rem" }}
                   >
-                    {section.text}
+                    {localizeDigits(section.text, locale)}
                   </HeadingTag>
                 );
               }
@@ -451,7 +506,7 @@ export default function ArticlePageView({ locale, slug }: ArticlePageViewProps) 
               return (
                 <section key={section.id} style={{ marginBottom: 20, padding: 18, borderRadius: 18, background: isDarkMode ? "#1a1a1a" : "#f8efe3", border: `1px solid ${isDarkMode ? "#333" : "rgba(0,0,0,0.04)"}` }}>
                   <p style={{ margin: 0, fontSize: 16, color: isDarkMode ? "#d0d0d0" : "#262626", textAlign: "justify", lineHeight: 1.85, whiteSpace: "pre-wrap" }}>
-                    {section.text}
+                    {localizeDigits(section.text, locale)}
                   </p>
                 </section>
               );
@@ -461,9 +516,9 @@ export default function ArticlePageView({ locale, slug }: ArticlePageViewProps) 
           <aside style={{ flex: "0 0 min(320px, 100%)", width: "min(320px, 100%)", border: `1px solid ${isDarkMode ? "#333" : "rgba(125,16,23,0.12)"}`, borderRadius: 20, padding: 24, background: isDarkMode ? "linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%)" : "linear-gradient(135deg, #fcf7ee 0%, #f4e9dc 100%)", boxShadow: isDarkMode ? "0 16px 36px rgba(0,0,0,0.5)" : "0 16px 36px rgba(125,16,23,0.08)", position: "sticky", top: 24, maxHeight: "min(600px, 85vh)", display: "flex", flexDirection: "column", gap: 14 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", color: isDarkMode ? "#ff7a8a" : "#7d1017", fontWeight: 800 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: 999, background: isDarkMode ? "rgba(255,122,138,0.2)" : "rgba(166,25,34,0.12)", fontSize: 14 }}>✎</span>
-                <span>{isPersian ? "کادر یادداشت" : "Notes"}</span>
-              </div>
+                  <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: 999, background: isDarkMode ? "rgba(255,122,138,0.2)" : "rgba(166,25,34,0.12)", fontSize: 14 }}>✎</span>
+                  <span>{isPersian ? "جعبه ابزار حاشیه‌نگاری" : "Marginal Notes toolbox"}</span>
+                </div>
               <button
                 type="button"
                 onClick={() => setIsNotesEnabled(!isNotesEnabled)}
@@ -473,53 +528,57 @@ export default function ArticlePageView({ locale, slug }: ArticlePageViewProps) 
                 <span style={{ position: "absolute", width: 22, height: 22, borderRadius: 999, background: "#fff", left: isNotesEnabled ? 24 : 2, transition: "left 0.3s ease", boxShadow: "0 2px 4px rgba(0,0,0,0.2)" }} />
               </button>
             </div>
-            <div style={{ fontSize: 12, lineHeight: 1.7, color: isDarkMode ? "#999" : "#6f5d49", background: isDarkMode ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.55)", border: `1px solid ${isDarkMode ? "#333" : "rgba(125,16,23,0.08)"}`, borderRadius: 14, padding: "10px 12px" }}>
+            <div style={{ fontSize: 12, lineHeight: 1.7, color: isDarkMode ? "#b3b3b3" : "#6f5d49", background: isDarkMode ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.55)", border: `1px solid ${isDarkMode ? "#232b38" : "rgba(125,16,23,0.08)"}`, borderRadius: 14, padding: "10px 12px" }}>
               {isPersian
-                ? "این بخش برای یادداشت‌برداری است. می‌توانید بخش‌هایی از متن مدخل را انتخاب کنید تا به‌صورت خودکار به اینجا اضافه شوند. متن نوشته‌شده در این کادر بعد از رفرش صفحه در مرورگر باقی می‌ماند، اما بهتر است خروجی Word بگیرید."
-                : "This area is for note-taking. You can select passages from the article and they will be added here automatically. Notes remain in your browser after a refresh, but it is better to export them to Word."}
+                ? "این بخش برای ذخیره و به‌اشتراک‌گذاری یادداشت‌های شما با دیگران است. پس از ثبت، یک نسخه روی دستگاه شما ذخیره می‌شود و نسخه‌ای در بخش حاشیه‌نگاری برای عموم منتشر می‌گردد."
+                : "Save and share short notes publicly. When you publish, one copy is saved to your device and another is posted to the Marginal Notes feed."}
             </div>
             <textarea
               value={notesText}
               onChange={(event) => setNotesText(event.target.value)}
               disabled={!isNotesEnabled}
-              placeholder={isPersian ? "متن خود را اینجا بنویسید..." : "Write your notes here..."}
-              style={{ width: "calc(100% - 22px)", flex: 1, minHeight: 400, resize: "none", border: "1px solid rgba(125,16,23,0.12)", borderRadius: 14, padding: 12, marginLeft: 8, background: isNotesEnabled ? (isDarkMode ? "#2a2a2a" : "#fffdf9") : (isDarkMode ? "#1f1f1f" : "#f5f5f5"), color: isNotesEnabled ? (isDarkMode ? "#e0e0e0" : "#262626") : (isDarkMode ? "#666" : "#999"), fontSize: 14, lineHeight: 1.8, fontFamily: "inherit", overflowY: "auto", boxShadow: isDarkMode ? "inset 0 1px 3px rgba(0,0,0,0.3)" : "inset 0 1px 3px rgba(125,16,23,0.05)", opacity: isNotesEnabled ? 1 : 0.6 }}
+              placeholder={isPersian ? "یادداشت نوشتن..." : "Write your note..."}
+              style={{ width: "calc(100% - 22px)", flex: 1, minHeight: 240, resize: "none", border: isDarkMode ? "1px solid #2b3240" : "1px solid rgba(125,16,23,0.12)", borderRadius: 14, padding: 12, marginLeft: 8, background: isNotesEnabled ? (isDarkMode ? "#1e222d" : "#fffdf9") : (isDarkMode ? "#15171f" : "#f5f5f5"), color: isNotesEnabled ? (isDarkMode ? "#e0e0e0" : "#262626") : (isDarkMode ? "#777" : "#999"), fontSize: 14, lineHeight: 1.8, fontFamily: "inherit", overflowY: "auto", boxShadow: isDarkMode ? "inset 0 1px 3px rgba(0,0,0,0.3)" : "inset 0 1px 3px rgba(125,16,23,0.05)", opacity: isNotesEnabled ? 1 : 0.6 }}
             />
             <button
               type="button"
-              onClick={handleExportNotes}
+              onClick={saveNote}
               disabled={!notesText.trim() || !isNotesEnabled}
-              suppressHydrationWarning
-              style={{ width: "100%", border: "none", borderRadius: 999, padding: "9px 12px", background: "#a61922", color: "#fff", cursor: (notesText.trim() && isNotesEnabled) ? "pointer" : "not-allowed", fontWeight: 700, fontSize: 13, opacity: (notesText.trim() && isNotesEnabled) ? 1 : 0.7 }}
+              style={{ width: "100%", border: "none", borderRadius: 999, padding: "12px 14px", background: "#a61922", color: "#fff", cursor: (!notesText.trim() || !isNotesEnabled) ? "not-allowed" : "pointer", fontWeight: 700, fontSize: 13, opacity: (!notesText.trim() || !isNotesEnabled) ? 0.6 : 1 }}
             >
-              {isPersian ? "دریافت سند" : "Download document"}
+              {isPersian ? "ذخیره یادداشت" : "Save note"}
             </button>
+            <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+              <button
+                type="button"
+                onClick={handleClearNotes}
+                disabled={!notesText.trim()}
+                style={{ width: "100%", borderRadius: 999, padding: "12px 14px", background: isDarkMode ? "#2a2e3a" : "#fff", color: isDarkMode ? "#e0e0e0" : "#a61922", cursor: !notesText.trim() ? "not-allowed" : "pointer", fontWeight: 700, fontSize: 13, border: `1px solid ${isDarkMode ? "#222" : "rgba(166,25,34,0.18)"}` }}
+              >
+                {isPersian ? "پاک کردن یادداشت" : "Clear note"}
+              </button>
+            </div>
+            {feedbackMessage ? (
+              <div style={{ marginTop: 12, borderRadius: 18, background: feedbackType === "success" ? "#f3fbf6" : "#fff1f0", border: `1px solid ${feedbackType === "success" ? "rgba(64, 160, 80, 0.18)" : "rgba(220, 53, 69, 0.18)"}`, color: feedbackType === "success" ? "#2b6d35" : "#842029", padding: 14, fontSize: 14 }}>
+                {feedbackMessage}
+              </div>
+            ) : null}
           </aside>
-        </div>
-
-        <div style={{ marginTop: 24, borderTop: "1px solid #eadfda", paddingTop: 20 }}>
-          <button
-            type="button"
-            onClick={downloadArticle}
-            style={{ border: "none", background: "#a61922", color: "#fff", padding: "10px 14px", borderRadius: 999, cursor: "pointer", fontWeight: 800 }}
-          >
-            {isPersian ? "دانلود خروجی نهایی" : "Download final output"}
-          </button>
         </div>
       </div>
       {referenceSections.length > 0 ? (
-        <section style={{ marginTop: 32, fontSize: 14, lineHeight: 1.7, color: "#4a4a4a" }}>
+        <section style={{ marginTop: 32, fontSize: 14, lineHeight: 1.7, color: isDarkMode ? "#c4c4c4" : "#4a4a4a", background: isDarkMode ? "#10131a" : "transparent", padding: isDarkMode ? "20px 22px 18px" : undefined, borderRadius: isDarkMode ? 18 : undefined }}>
           {referenceSections.map((section) => {
             if (section.kind === "heading") {
               return (
-                <h3 key={section.id} style={{ margin: "0 0 12px", fontSize: 16, fontWeight: 700, color: "#221f1f" }}>
-                  {section.text}
+                <h3 key={section.id} style={{ margin: "0 0 12px", fontSize: 16, fontWeight: 700, color: isDarkMode ? "#f0f0f0" : "#221f1f" }}>
+                  {localizeDigits(section.text, locale)}
                 </h3>
               );
             }
             return (
-              <p key={section.id} style={{ margin: "0 0 10px", fontSize: 14, color: "#4a4a4a", textAlign: isPersian ? "right" : "left" }}>
-                {section.text}
+              <p key={section.id} style={{ margin: "0 0 10px", fontSize: 14, color: isDarkMode ? "#c4c4c4" : "#4a4a4a", textAlign: isPersian ? "right" : "left" }}>
+                {localizeDigits(section.text, locale)}
               </p>
             );
           })}

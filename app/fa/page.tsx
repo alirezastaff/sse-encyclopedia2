@@ -730,8 +730,7 @@ export default function FaHomePage() {
 
                 <div className="hero-actions">
                   <Link href="/fa/archive" className="primary-btn">مشاهده فهرست مدخل‌ها</Link>
-                  <Link href="/fa/archive" className="secondary-btn">بایگانی</Link>
-                </div>
+                  <Link href="/fa/archive" className="secondary-btn">بایگانی</Link>                  <Link href="/profile" className="secondary-btn">حاشیه نگاری</Link>                </div>
               </div>
 
               <aside className="hero-panel">
@@ -758,17 +757,17 @@ export default function FaHomePage() {
 
             <section className="info-strip">
               <div className="info-item">
-                <span>01</span>
+                <span>۰۱</span>
                 <p>ترجمه و انتشار مدخل‌های تخصصی اقتصاد اجتماعی و همبستگی به زبان فارسی.</p>
               </div>
 
               <div className="info-item">
-                <span>02</span>
+                <span>۰۲</span>
                 <p>فعالیت علمی با همکاری گروهی از مترجمان و محققان اقتصاد اجتماعی در ایران.</p>
               </div>
 
               <div className="info-item">
-                <span>03</span>
+                <span>۰۳</span>
                 <p>فراهم‌کردن دسترسی آسان برای دانشجویان، پژوهشگران و علاقه‌مندان این حوزه.</p>
               </div>
             </section>
@@ -833,12 +832,13 @@ export default function FaHomePage() {
                 </p>
               </article>
 
+
               <article className="feature-card">
-                <div className="card-icon">🎓</div>
-                <h3>برای پژوهشگران و دانشجویان</h3>
+                <div className="card-icon">🧠</div>
+                <h3>پنل مطالعه پژوهشی</h3>
                 <p>
-                  این وب‌سایت بستری برای دسترسی آسان به مفاهیم، نظریه‌ها و مدخل‌های
-                  کلیدی اقتصاد اجتماعی و همبستگی به زبان فارسی فراهم می‌کند.
+                  نشانک‌ها، یادداشت‌ها و پیشرفت مطالعه خود را ذخیره کنید و هر زمان به
+                  ادامه پژوهش بازگردید.
                 </p>
               </article>
             </section>

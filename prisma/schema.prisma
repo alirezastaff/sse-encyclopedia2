@@ -1,0 +1,133 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String
+  createdAt     DateTime  @default(now())
+  accounts      Account[]
+  sessions      Session[]
+  bookmarks     Bookmark[]
+  readingList   ReadingListItem[]
+  readingProgresses ReadingProgress[]
+  noteGroups    NoteGroup[]
+  articleNotes  ArticleNote[]
+  highlights    TextHighlight[]
+}
+
+model Account {
+  id                 String   @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?  @map("refresh_token")
+  access_token       String?  @map("access_token")
+  expires_at         Int?     @map("expires_at")
+  token_type         String?  @map("token_type")
+  scope              String?
+  id_token           String?  @map("id_token")
+  session_state      String?
+  oauth_token_secret String?  @map("oauth_token_secret")
+  oauth_token        String?  @map("oauth_token")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Bookmark {
+  id          String   @id @default(cuid())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  articleSlug String
+  createdAt   DateTime @default(now())
+
+  @@unique([userId, articleSlug])
+}
+
+model ReadingListItem {
+  id          String   @id @default(cuid())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  articleSlug String
+  status      String   @default("to-read")
+  addedAt     DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, articleSlug])
+}
+
+model ReadingProgress {
+  id             String   @id @default(cuid())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String
+  articleSlug    String
+  scrollPosition Int
+  updatedAt      DateTime @updatedAt
+
+  @@unique([userId, articleSlug])
+}
+
+model NoteGroup {
+  id        String        @id @default(cuid())
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  name      String
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  notes     ArticleNote[]
+
+  @@unique([userId, name])
+}
+
+model ArticleNote {
+  id          String   @id @default(cuid())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  group       NoteGroup? @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId     String?
+  articleSlug String
+  content     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([groupId, articleSlug])
+}
+
+model TextHighlight {
+  id          String   @id @default(cuid())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  articleSlug String
+  sectionId   String?
+  text        String
+  note        String?
+  createdAt   DateTime @default(now())
+}

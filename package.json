@@ -11,13 +11,20 @@
   "dependencies": {
     "@mdx-js/react": "^3.1.1",
     "@next/mdx": "^16.2.9",
+    "@auth/prisma-adapter": "^2.11.3",
     "contentlayer": "^0.3.4",
     "next": "16.2.9",
+    "next-auth": "^4.24.15",
     "next-themes": "^0.4.6",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "@prisma/client": "^5.0.0",
+    "bcryptjs": "^2.4.3",
+    "jspdf": "^2.5.1"
   },
   "devDependencies": {
+    "prisma": "^5.0.0",
+    "@types/bcryptjs": "^2.4.2",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

@@ -1,0 +1,29 @@
+{
+  "notes": [
+    {
+      "id": "67aa35da-ae7d-4c66-ac3e-6ecd2190d6f5",
+      "articleSlug": "activism-and-social-movements",
+      "name": "alimostajeran",
+      "email": "alimostajeran@example.com",
+      "content": "Given the diversity of social and solidarity economy (SSE) experiences within and between countries and continents, it is not surprising that scholarly studies on the SSE and social movements are fraught with divergent views and understandings, especially since they tend to be associated with distinct fields of academic research that so far rarely intersect.",
+      "createdAt": "2026-08-05T08:07:24.318Z",
+      "replies": [
+        {
+          "id": "11204630-85f4-4af8-8486-d30a6035c84c",
+          "name": "ali",
+          "content": "right!",
+          "createdAt": "2026-08-05T08:07:44.684Z"
+        }
+      ]
+    },
+    {
+      "id": "ab17a96b-8cf7-4b97-96fc-86599d7ee48e",
+      "articleSlug": "activism-and-social-movements",
+      "name": "ali",
+      "email": "alirezastaff@gmail.com",
+      "content": "this article was brilliant.",
+      "createdAt": "2026-08-05T07:01:46.890Z",
+      "replies": []
+    }
+  ]
+}

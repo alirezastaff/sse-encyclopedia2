@@ -172,8 +172,8 @@ const styles = `
     color: #fff;
     border-radius: var(--radius-xl);
     box-shadow: var(--shadow);
-    padding: 24px 26px;
-    margin-bottom: 16px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
     position: relative;
     overflow: hidden;
   }
@@ -188,7 +188,7 @@ const styles = `
   .hero::before { width: 240px; height: 240px; top: -100px; right: -70px; }
   .hero::after { width: 180px; height: 180px; left: -70px; bottom: -80px; }
 
-  .hero-inner { position: relative; z-index: 2; display: grid; grid-template-columns: 1.6fr 0.9fr; gap: 20px; align-items: center; }
+  .hero-inner { position: relative; z-index: 2; display: grid; grid-template-columns: 1.4fr 0.8fr; gap: 16px; align-items: center; }
   .eyebrow { display: inline-flex; align-items: center; gap: 8px; padding: 5px 10px; border: 1px solid rgba(255,255,255,0.18); border-radius: 999px; background: rgba(255,255,255,0.08); font-size: 12px; margin-bottom: 10px; }
   .hero h1 { margin: 0 0 8px; font-size: clamp(1.35rem, 2.3vw, 2.2rem); line-height: 1.45; }
   .hero p { margin: 0; color: rgba(255,255,255,0.88); font-size: 0.92rem; }
@@ -393,11 +393,11 @@ export default function ArchivePage({ locale = "fa" }: { locale?: Locale }) {
 
           <div className="stats">
             <div className="stat">
-              <strong>{encyclopediaParts.length}</strong>
+              <strong>{isFa ? toFaNum(encyclopediaParts.length) : encyclopediaParts.length}</strong>
               <span>{strings.partsLabel}</span>
             </div>
             <div className="stat">
-              <strong>{totalEntries}</strong>
+              <strong>{isFa ? toFaNum(totalEntries) : totalEntries}</strong>
               <span>{strings.entriesLabel}</span>
             </div>
             <div className="stat">
@@ -438,7 +438,7 @@ export default function ArchivePage({ locale = "fa" }: { locale?: Locale }) {
           <div className="catalog-body">
             {filteredParts.map((part) => (
               <div className={`part ${expandedParts[part.id] ? "open" : ""}`} key={part.id}>
-                <button className="part-toggle" type="button" onClick={() => togglePart(part.id)}>
+            <button className="part-toggle" type="button" onClick={() => togglePart(part.id)}>
                   <div>
                     <div className="part-fa">{isFa ? part.faTitle : part.enTitle}</div>
                     <div className="part-en">{isFa ? part.enTitle : `Section ${part.number}`}</div>

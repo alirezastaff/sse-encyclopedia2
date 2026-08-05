@@ -587,6 +587,7 @@ export default function EnHomePage() {
                 <div className="hero-actions">
                   <Link href="/en/archive" className="primary-btn">Browse entries</Link>
                   <Link href="/en/archive" className="secondary-btn">Archive</Link>
+                  <Link href="/profile" className="secondary-btn">Marginal Notes</Link>
                 </div>
               </div>
 
@@ -666,10 +667,11 @@ export default function EnHomePage() {
                 <p>Select entries are translated carefully and made available for English-speaking audiences.</p>
               </article>
 
+
               <article className="feature-card">
-                <div className="card-icon">🎓</div>
-                <h3>For researchers and students</h3>
-                <p>The site offers an accessible entry point to key ideas and concepts in the field.</p>
+                <div className="card-icon">🧠</div>
+                <h3>Research workspace</h3>
+                <p>Save bookmarks, notes, and highlights, track reading progress, and return to your research dashboard anytime.</p>
               </article>
             </section>
           </main>
