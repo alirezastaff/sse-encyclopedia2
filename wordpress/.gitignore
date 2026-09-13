@@ -1,0 +1,6 @@
+wp-content/uploads/
+wp-content/index.php
+wp-content/plugins/akismet/
+wp-config.php
+*.sql
+*.zip

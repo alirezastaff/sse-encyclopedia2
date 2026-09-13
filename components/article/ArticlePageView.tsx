@@ -218,7 +218,6 @@ export default function ArticlePageView({ locale, slug }: ArticlePageViewProps) 
   });
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
   const [feedbackType, setFeedbackType] = useState<"success" | "error" | null>(null);
-  const [isSavingNote, setIsSavingNote] = useState(false);
 
   const sections = useMemo<Section[]>(() => {
     if (!article) return [];
@@ -296,8 +295,6 @@ export default function ArticlePageView({ locale, slug }: ArticlePageViewProps) 
       return;
     }
 
-    setIsSavingNote(true);
-
     const savePayload = { articleSlug: slug, content: notesText };
     const publicNotePayload = {
       name: session?.user?.name?.trim() || session?.user?.email || "Anonymous",
@@ -336,8 +333,6 @@ export default function ArticlePageView({ locale, slug }: ArticlePageViewProps) 
     } catch {
       setFeedbackMessage(isPersian ? "خطا در ارسال یادداشت." : "Note save failed.");
       setFeedbackType("error");
-    } finally {
-      setIsSavingNote(false);
     }
 
     const blob = buildNotesDocxBlob(notesText.trim());
@@ -458,12 +453,14 @@ export default function ArticlePageView({ locale, slug }: ArticlePageViewProps) 
           >
             {isPersian ? "دانلود خروجی مقاله" : "Download article"}
           </button>
-          <Link
-            href="/profile"
-            style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "10px 16px", borderRadius: 999, background: "#fff", color: "#a61922", border: "1px solid rgba(166,25,34,0.22)", textDecoration: "none", fontWeight: 800, boxShadow: "0 8px 18px rgba(166,25,34,0.12)" }}
-          >
-            {isPersian ? "حاشیه نگاری" : "Marginal Notes"}
-          </Link>
+          {isPersian ? (
+            <Link
+              href="/fa/profile"
+              style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "10px 16px", borderRadius: 999, background: "#fff", color: "#a61922", border: "1px solid rgba(166,25,34,0.22)", textDecoration: "none", fontWeight: 800, boxShadow: "0 8px 18px rgba(166,25,34,0.12)" }}
+            >
+              حاشیه نگاری
+            </Link>
+          ) : null}
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12, marginBottom: 24 }}>
@@ -513,7 +510,7 @@ export default function ArticlePageView({ locale, slug }: ArticlePageViewProps) 
             })}
           </article>
 
-          <aside style={{ flex: "0 0 min(320px, 100%)", width: "min(320px, 100%)", border: `1px solid ${isDarkMode ? "#333" : "rgba(125,16,23,0.12)"}`, borderRadius: 20, padding: 24, background: isDarkMode ? "linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%)" : "linear-gradient(135deg, #fcf7ee 0%, #f4e9dc 100%)", boxShadow: isDarkMode ? "0 16px 36px rgba(0,0,0,0.5)" : "0 16px 36px rgba(125,16,23,0.08)", position: "sticky", top: 24, maxHeight: "min(600px, 85vh)", display: "flex", flexDirection: "column", gap: 14 }}>
+          {isPersian ? <aside style={{ flex: "0 0 min(320px, 100%)", width: "min(320px, 100%)", border: `1px solid ${isDarkMode ? "#333" : "rgba(125,16,23,0.12)"}`, borderRadius: 20, padding: 24, background: isDarkMode ? "linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%)" : "linear-gradient(135deg, #fcf7ee 0%, #f4e9dc 100%)", boxShadow: isDarkMode ? "0 16px 36px rgba(0,0,0,0.5)" : "0 16px 36px rgba(125,16,23,0.08)", position: "sticky", top: 24, maxHeight: "min(600px, 85vh)", display: "flex", flexDirection: "column", gap: 14 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", color: isDarkMode ? "#ff7a8a" : "#7d1017", fontWeight: 800 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: 999, background: isDarkMode ? "rgba(255,122,138,0.2)" : "rgba(166,25,34,0.12)", fontSize: 14 }}>✎</span>
@@ -563,7 +560,7 @@ export default function ArticlePageView({ locale, slug }: ArticlePageViewProps) 
                 {feedbackMessage}
               </div>
             ) : null}
-          </aside>
+          </aside> : null}
         </div>
       </div>
       {referenceSections.length > 0 ? (

@@ -8,7 +8,7 @@ export default function Header() {
   const pathname = usePathname();
   const isFa = pathname.startsWith("/fa");
   const base = isFa ? "/fa" : "/en";
-  const { data: session, status } = useSession();
+  const { status } = useSession();
 
   return (
     <header className="header">
@@ -24,7 +24,7 @@ export default function Header() {
           <li>
             <Link href="/profile">{isFa ? "حاشیه نگاری" : "Marginal Notes"}</Link>
           </li>
-          {status === "authenticated" ? (
+          {isFa && status === "authenticated" ? (
             <>
               <li>
                 <Link href="/profile">{isFa ? "پروفایل" : "Profile"}</Link>

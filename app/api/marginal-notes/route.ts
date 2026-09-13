@@ -1,181 +1,80 @@
-import { promises as fs } from "fs";
-import path from "path";
+import { prisma } from "@/lib/prisma";
+import { authOptions } from "@/lib/auth";
 import { articles } from "@/lib/articles";
+import { getServerSession } from "next-auth";
 
-type StoredReply = {
-  id: string;
-  name: string;
-  email?: string;
-  replyEmail?: string;
-  content: string;
-  createdAt: string;
-};
+const postKinds = new Set(["comment", "question", "critique", "proposal", "experience", "reference"]);
+const maxContentLength = 12000;
 
-type StoredNote = {
-  id: string;
-  articleSlug: string;
-  name: string;
-  email?: string;
-  content: string;
-  createdAt: string;
-  replies: StoredReply[];
-};
-
-type Storage = {
-  notes: StoredNote[];
-};
-
-const storagePath = path.join(process.cwd(), "data", "marginal-notes.json");
-
-async function ensureStorage() {
-  const dir = path.dirname(storagePath);
-  await fs.mkdir(dir, { recursive: true });
-  try {
-    await fs.access(storagePath);
-  } catch {
-    await fs.writeFile(storagePath, JSON.stringify({ notes: [] }, null, 2), "utf8");
-  }
+function json(data: unknown, status = 200) {
+  return new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } });
 }
 
-async function readStorage(): Promise<Storage> {
-  await ensureStorage();
-  const file = await fs.readFile(storagePath, "utf8");
-  return JSON.parse(file) as Storage;
+function validEmail(email: string) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); }
+function validArticleSlug(slug: string) { return articles.some((article) => article.slug === slug); }
+
+function publicPost(post: {
+  id: string; articleSlug: string; content: string; kind: string; guestName: string; createdAt: Date;
+  replies: Array<{ id: string; content: string; guestName: string; createdAt: Date }>;
+}) {
+  return {
+    id: post.id,
+    articleSlug: post.articleSlug,
+    content: post.content,
+    kind: post.kind,
+    name: post.guestName,
+    createdAt: post.createdAt,
+    replies: post.replies.map((reply) => ({ id: reply.id, content: reply.content, name: reply.guestName, createdAt: reply.createdAt })),
+  };
 }
 
-async function writeStorage(data: Storage) {
-  await fs.writeFile(storagePath, JSON.stringify(data, null, 2), "utf8");
-}
-
-function validateEmail(email: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
-function validArticleSlug(slug: string) {
-  return articles.some((article) => article.slug === slug);
-}
-
-export async function GET() {
-  const storage = await readStorage();
-  const notes = storage.notes
-    .slice()
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .map((note) => ({
-      id: note.id,
-      articleSlug: note.articleSlug,
-      content: note.content,
-      createdAt: note.createdAt,
-      replies: note.replies.map((reply) => ({
-        id: reply.id,
-        content: reply.content,
-        replyEmail: reply.replyEmail,
-        createdAt: reply.createdAt,
-      })),
-    }));
-
-  return new Response(JSON.stringify({ notes }), { status: 200, headers: { "Content-Type": "application/json" } });
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const articleSlug = url.searchParams.get("article")?.trim() || undefined;
+  const kind = url.searchParams.get("kind")?.trim() || undefined;
+  const search = url.searchParams.get("q")?.trim() || undefined;
+  const posts = await prisma.marginalPost.findMany({
+    where: {
+      status: "published",
+      ...(articleSlug && validArticleSlug(articleSlug) ? { articleSlug } : {}),
+      ...(kind && postKinds.has(kind) ? { kind } : {}),
+      ...(search ? { content: { contains: search } } : {}),
+    },
+    orderBy: { publishedAt: "desc" },
+    take: 100,
+    include: { replies: { where: { status: "published" }, orderBy: { publishedAt: "asc" } } },
+  });
+  return json({ posts: posts.map(publicPost) });
 }
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
-  if (!body || typeof body !== "object") {
-    return new Response(JSON.stringify({ error: "Invalid request payload." }), { status: 400 });
+  if (!body || typeof body !== "object") return json({ error: "بدنه درخواست معتبر نیست." }, 400);
+
+  const session = await getServerSession(authOptions);
+  const input = body as Record<string, unknown>;
+  const content = typeof input.content === "string" ? input.content.trim() : "";
+  const articleSlug = typeof input.articleSlug === "string" ? input.articleSlug.trim() : "";
+  const kind = typeof input.kind === "string" && postKinds.has(input.kind) ? input.kind : "comment";
+  const replyToId = typeof input.replyToId === "string" ? input.replyToId.trim() : "";
+  const sessionEmail = session?.user?.email?.trim().toLowerCase() || "";
+  const sessionName = session?.user?.name?.trim() || "";
+  const name = sessionName || (typeof input.name === "string" ? input.name.trim() : "");
+  const email = sessionEmail || (typeof input.email === "string" ? input.email.trim().toLowerCase() : "");
+
+  if (!name || name.length > 120) return json({ error: "نام معتبر الزامی است." }, 400);
+  if (!validEmail(email)) return json({ error: "ایمیل معتبر الزامی است." }, 400);
+  if (!content || content.length > maxContentLength) return json({ error: "متن دیدگاه باید بین ۱ تا ۱۲۰۰۰ نویسه باشد." }, 400);
+  if (!articleSlug || !validArticleSlug(articleSlug)) return json({ error: "انتخاب یک مدخل معتبر الزامی است." }, 400);
+
+  const user = sessionEmail ? await prisma.user.findUnique({ where: { email: sessionEmail } }) : null;
+  if (replyToId) {
+    const parent = await prisma.marginalPost.findUnique({ where: { id: replyToId } });
+    if (!parent || parent.status !== "published" || parent.articleSlug !== articleSlug) return json({ error: "گفت‌وگوی موردنظر یافت نشد." }, 404);
+    const reply = await prisma.marginalReply.create({ data: { postId: parent.id, userId: user?.id, content, guestName: name, guestEmail: email, status: "pending" } });
+    return json({ reply: { id: reply.id, status: reply.status } }, 201);
   }
 
-  const { name, email, articleSlug, content, replyToId, replyEmail } = body as {
-    name?: unknown;
-    email?: unknown;
-    articleSlug?: unknown;
-    content?: unknown;
-    replyToId?: unknown;
-    replyEmail?: unknown;
-  };
-
-  if (typeof name !== "string" || !name.trim()) {
-    return new Response(JSON.stringify({ error: "Name is required." }), { status: 400 });
-  }
-
-  if (typeof content !== "string" || !content.trim()) {
-    return new Response(JSON.stringify({ error: "Comment content is required." }), { status: 400 });
-  }
-
-  if (typeof articleSlug !== "string" || !validArticleSlug(articleSlug)) {
-    return new Response(JSON.stringify({ error: "Valid article slug is required." }), { status: 400 });
-  }
-
-  const normalizedEmail = typeof email === "string" ? email.trim() : "";
-  if (normalizedEmail && !validateEmail(normalizedEmail)) {
-    return new Response(JSON.stringify({ error: "Invalid email address." }), { status: 400 });
-  }
-
-  const normalizedReplyEmail = typeof replyEmail === "string" ? replyEmail.trim() : "";
-  if (normalizedReplyEmail && !validateEmail(normalizedReplyEmail)) {
-    return new Response(JSON.stringify({ error: "Invalid reply email address." }), { status: 400 });
-  }
-
-  const storage = await readStorage();
-
-  if (typeof replyToId === "string" && replyToId.trim()) {
-    const noteIndex = storage.notes.findIndex((note) => note.id === replyToId);
-    if (noteIndex < 0) {
-      return new Response(JSON.stringify({ error: "Original note not found." }), { status: 404 });
-    }
-
-    const reply = {
-      id: crypto.randomUUID(),
-      name: name.trim(),
-      email: normalizedEmail || undefined,
-      replyEmail: normalizedReplyEmail || undefined,
-      content: content.trim(),
-      createdAt: new Date().toISOString(),
-    };
-
-    storage.notes[noteIndex].replies.push(reply);
-    await writeStorage(storage);
-
-    const updatedNote = storage.notes[noteIndex];
-    return new Response(
-      JSON.stringify({
-        note: {
-          id: updatedNote.id,
-          articleSlug: updatedNote.articleSlug,
-          content: updatedNote.content,
-          createdAt: updatedNote.createdAt,
-          replies: updatedNote.replies.map((item) => ({
-            id: item.id,
-            content: item.content,
-            replyEmail: item.replyEmail,
-            createdAt: item.createdAt,
-          })),
-        },
-      }),
-      { status: 201, headers: { "Content-Type": "application/json" } }
-    );
-  }
-
-  const note = {
-    id: crypto.randomUUID(),
-    articleSlug,
-    name: name.trim(),
-    email: normalizedEmail || undefined,
-    content: content.trim(),
-    createdAt: new Date().toISOString(),
-    replies: [],
-  };
-
-  storage.notes.unshift(note);
-  await writeStorage(storage);
-
-  return new Response(
-    JSON.stringify({
-      note: {
-        id: note.id,
-        articleSlug: note.articleSlug,
-        content: note.content,
-        createdAt: note.createdAt,
-        replies: [],
-      },
-    }),
-    { status: 201, headers: { "Content-Type": "application/json" } }
-  );
+  const post = await prisma.marginalPost.create({ data: { userId: user?.id, articleSlug, content, kind, guestName: name, guestEmail: email, status: "pending" } });
+  return json({ post: { id: post.id, status: post.status } }, 201);
 }

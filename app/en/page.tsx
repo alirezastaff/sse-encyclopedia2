@@ -559,6 +559,9 @@ export default function EnHomePage() {
             <nav className="main-nav">
               <ul>
                 <li><a href="#">Entries</a></li>
+                <li><Link href="/en/country-explorer">Country Explorer</Link></li>
+                <li><Link href="/en/case-studies">Case Studies Hub</Link></li>
+                <li><Link href="/en/impact-calculator">Impact Calculator</Link></li>
                 <li><a href="#">About</a></li>
                 <li><a href="#">Collaborate</a></li>
               </ul>
@@ -586,8 +589,10 @@ export default function EnHomePage() {
 
                 <div className="hero-actions">
                   <Link href="/en/archive" className="primary-btn">Browse entries</Link>
+                  <Link href="/en/country-explorer" className="secondary-btn">Country Explorer</Link>
+                  <Link href="/en/case-studies" className="secondary-btn">Case Studies Hub</Link>
+                  <Link href="/en/impact-calculator" className="secondary-btn">Impact Calculator</Link>
                   <Link href="/en/archive" className="secondary-btn">Archive</Link>
-                  <Link href="/profile" className="secondary-btn">Marginal Notes</Link>
                 </div>
               </div>
 

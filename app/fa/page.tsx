@@ -730,7 +730,12 @@ export default function FaHomePage() {
 
                 <div className="hero-actions">
                   <Link href="/fa/archive" className="primary-btn">مشاهده فهرست مدخل‌ها</Link>
-                  <Link href="/fa/archive" className="secondary-btn">بایگانی</Link>                  <Link href="/profile" className="secondary-btn">حاشیه نگاری</Link>                </div>
+                  <Link href="/fa/country-explorer" className="secondary-btn">وضعیت اقتصاد اجتماعی کشورها</Link>
+                  <Link href="/fa/case-studies" className="secondary-btn">مطالعات موردی</Link>
+                  <Link href="/fa/impact-calculator" className="secondary-btn">محاسبه اثرگذاری</Link>
+                  <Link href="/fa/archive" className="secondary-btn">بایگانی</Link>
+                  <Link href="/fa/profile" className="secondary-btn">حاشیه نگاری</Link>
+                </div>
               </div>
 
               <aside className="hero-panel">
