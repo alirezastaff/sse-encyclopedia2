@@ -318,7 +318,7 @@ export default function ArticlePageView({ locale, slug }: ArticlePageViewProps) 
       ]);
 
       if (articleResponse.ok && marginalResponse.ok) {
-        setFeedbackMessage(isPersian ? "یادداشت شما در حاشیه نگاری ذخیره شد." : "Your note has been saved to Marginal Notes.");
+        setFeedbackMessage(isPersian ? "یادداشت شما در حاشیه نگار ذخیره شد." : "Your note has been saved to Marginal Notes.");
         setFeedbackType("success");
       } else if (articleResponse.ok && !marginalResponse.ok) {
         setFeedbackMessage(isPersian ? "یادداشت شما ذخیره شد، اما در فید حاشیه نمایش داده نشد." : "Note saved, but it could not be published to Marginal Notes.");
@@ -458,7 +458,7 @@ export default function ArticlePageView({ locale, slug }: ArticlePageViewProps) 
               href="/fa/profile"
               style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "10px 16px", borderRadius: 999, background: "#fff", color: "#a61922", border: "1px solid rgba(166,25,34,0.22)", textDecoration: "none", fontWeight: 800, boxShadow: "0 8px 18px rgba(166,25,34,0.12)" }}
             >
-              حاشیه نگاری
+              حاشیه نگار
             </Link>
           ) : null}
         </div>
@@ -514,7 +514,7 @@ export default function ArticlePageView({ locale, slug }: ArticlePageViewProps) 
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", color: isDarkMode ? "#ff7a8a" : "#7d1017", fontWeight: 800 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: 999, background: isDarkMode ? "rgba(255,122,138,0.2)" : "rgba(166,25,34,0.12)", fontSize: 14 }}>✎</span>
-                  <span>{isPersian ? "جعبه ابزار حاشیه‌نگاری" : "Marginal Notes toolbox"}</span>
+                  <span>{isPersian ? "جعبه ابزار حاشیه نگار" : "Marginal Notes toolbox"}</span>
                 </div>
               <button
                 type="button"
@@ -527,7 +527,7 @@ export default function ArticlePageView({ locale, slug }: ArticlePageViewProps) 
             </div>
             <div style={{ fontSize: 12, lineHeight: 1.7, color: isDarkMode ? "#b3b3b3" : "#6f5d49", background: isDarkMode ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.55)", border: `1px solid ${isDarkMode ? "#232b38" : "rgba(125,16,23,0.08)"}`, borderRadius: 14, padding: "10px 12px" }}>
               {isPersian
-                ? "این بخش برای ذخیره و به‌اشتراک‌گذاری یادداشت‌های شما با دیگران است. پس از ثبت، یک نسخه روی دستگاه شما ذخیره می‌شود و نسخه‌ای در بخش حاشیه‌نگاری برای عموم منتشر می‌گردد."
+                ? "این بخش برای ذخیره و به‌اشتراک‌گذاری یادداشت‌های شما با دیگران است. پس از ثبت، یک نسخه روی دستگاه شما ذخیره می‌شود و نسخه‌ای در بخش حاشیه نگار برای عموم منتشر می‌گردد."
                 : "Save and share short notes publicly. When you publish, one copy is saved to your device and another is posted to the Marginal Notes feed."}
             </div>
             <textarea

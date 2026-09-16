@@ -76,6 +76,30 @@ function sse_encyclopedia_register_content() {
             'map_meta_cap'       => true,
         ) );
 
+    register_post_type( 'sse_case_study', array(
+        'labels' => array(
+            'name'          => __( 'Case Studies', 'sse-encyclopedia' ),
+            'singular_name' => __( 'Case Study', 'sse-encyclopedia' ),
+            'add_new_item'  => __( 'Add Case Study', 'sse-encyclopedia' ),
+            'edit_item'     => __( 'Edit Case Study', 'sse-encyclopedia' ),
+        ),
+        'public'             => false,
+        'show_ui'            => true,
+        'show_in_rest'       => false,
+        'supports'           => array( 'title', 'author', 'thumbnail', 'revisions' ),
+        'menu_icon'          => 'dashicons-media-document',
+        'capability_type'    => 'post',
+        'map_meta_cap'       => true,
+    ) );
+
+    register_taxonomy( 'sse_case_category', array( 'sse_case_study' ), array(
+        'labels'       => array( 'name' => __( 'Case Study Categories', 'sse-encyclopedia' ) ),
+        'public'       => false,
+        'show_ui'      => true,
+        'show_in_rest' => false,
+        'hierarchical' => true,
+    ) );
+
     register_post_type( 'sse_impact_scenario', array(
         'labels' => array(
             'name'          => __( 'Impact Scenarios', 'sse-encyclopedia' ),
@@ -181,12 +205,14 @@ function sse_country_content_box( $post ) {
     echo '<h3>English</h3>';
     sse_country_field( 'Article title', 'sse_country[title_en]', $meta['title_en'] );
     sse_country_field( 'Short social and economic snapshot', 'sse_country[summary_en]', $meta['summary_en'], 'textarea' );
-    sse_country_field( 'Full country article', 'sse_country[article_en]', $meta['article_en'], 'textarea' );
+    echo '<p><strong>Full country article</strong></p>';
+    wp_editor( $meta['article_en'], 'sse_country_article_en', array( 'textarea_name' => 'sse_country[article_en]', 'textarea_rows' => 16, 'media_buttons' => true ) );
     echo '</div><div class="sse-impact-card" dir="rtl">';
     echo '<h3>فارسی</h3>';
     sse_country_field( 'عنوان مقاله', 'sse_country[title_fa]', $meta['title_fa'], 'text', 'rtl' );
     sse_country_field( 'خلاصه وضعیت اجتماعی و اقتصادی', 'sse_country[summary_fa]', $meta['summary_fa'], 'textarea', 'rtl' );
-    sse_country_field( 'مقاله کامل کشور', 'sse_country[article_fa]', $meta['article_fa'], 'textarea', 'rtl' );
+    echo '<p><strong>مقاله کامل کشور</strong></p>';
+    wp_editor( $meta['article_fa'], 'sse_country_article_fa', array( 'textarea_name' => 'sse_country[article_fa]', 'textarea_rows' => 16, 'media_buttons' => true, 'tinymce' => array( 'directionality' => 'rtl' ) ) );
     echo '<label><input type="checkbox" name="sse_country[published_fa]" value="1" ' . checked( $meta['published_fa'], 1, false ) . '> انتشار نسخه فارسی</label></div>';
     echo '<label><input type="checkbox" name="sse_country[published_en]" value="1" ' . checked( $meta['published_en'], 1, false ) . '> Publish English version</label></div>';
 }
@@ -473,10 +499,36 @@ add_action( 'save_post', 'sse_impact_save_meta' );
 function sse_encyclopedia_activate() {
     sse_encyclopedia_register_content();
     sse_encyclopedia_create_tables();
+    sse_encyclopedia_create_pages();
     flush_rewrite_rules();
 }
 register_activation_hook( SSE_ENCYCLOPEDIA_FILE, 'sse_encyclopedia_activate' );
 register_deactivation_hook( SSE_ENCYCLOPEDIA_FILE, 'flush_rewrite_rules' );
+
+function sse_encyclopedia_create_pages() {
+    $pages = array(
+        'archive' => array( 'title' => 'Archive', 'template' => '' ),
+        'profile' => array( 'title' => 'Profile', 'template' => 'page-profile.php' ),
+        'login' => array( 'title' => 'Login', 'template' => 'page-login.php' ),
+        'register' => array( 'title' => 'Register', 'template' => 'page-register.php' ),
+        'country-explorer' => array( 'title' => 'Country Explorer', 'template' => 'page-country-explorer.php' ),
+        'case-studies' => array( 'title' => 'Case Studies', 'template' => 'page-case-studies.php' ),
+        'impact-calculator' => array( 'title' => 'Impact Calculator', 'template' => 'page-impact-calculator.php' ),
+        'marginal-notes' => array( 'title' => 'Marginal Notes', 'template' => 'page-marginal-notes.php' ),
+    );
+    foreach ( $pages as $slug => $page ) {
+        $existing = get_page_by_path( $slug );
+        $page_id = $existing ? $existing->ID : wp_insert_post( array( 'post_title' => $page['title'], 'post_name' => $slug, 'post_status' => 'publish', 'post_type' => 'page' ) );
+        if ( $page_id && ! is_wp_error( $page_id ) && $page['template'] ) update_post_meta( $page_id, '_wp_page_template', $page['template'] );
+    }
+}
+function sse_encyclopedia_maybe_upgrade() {
+    if ( version_compare( (string) get_option( 'sse_encyclopedia_pages_version', '0' ), '1.1.0', '<' ) ) {
+        sse_encyclopedia_create_pages();
+        update_option( 'sse_encyclopedia_pages_version', '1.1.0', false );
+    }
+}
+add_action( 'plugins_loaded', 'sse_encyclopedia_maybe_upgrade' );
 
 function sse_encyclopedia_create_tables() {
     global $wpdb;
@@ -600,15 +652,13 @@ function sse_encyclopedia_article_id( $value ) {
 function sse_encyclopedia_find_imported_article( $slug, $locale ) {
     $posts = get_posts( array(
         'post_type'      => 'sse_article',
-        'name'           => sanitize_title( $slug ),
         'post_status'    => 'any',
         'posts_per_page' => 1,
         'fields'         => 'ids',
         'meta_query'     => array(
-            array(
-                'key'   => '_sse_language',
-                'value' => sanitize_key( $locale ),
-            ),
+            'relation' => 'AND',
+            array( 'key' => '_sse_legacy_slug', 'value' => sanitize_title( $slug ) ),
+            array( 'key' => '_sse_language', 'value' => sanitize_key( $locale ) ),
         ),
     ) );
 
@@ -638,8 +688,79 @@ function sse_encyclopedia_register_rest() {
     register_rest_route( 'sse/v1', '/private-notes', array( 'methods' => 'GET', 'permission_callback' => 'sse_encyclopedia_require_user', 'callback' => 'sse_encyclopedia_get_private_notes' ) );
     register_rest_route( 'sse/v1', '/private-notes', array( 'methods' => 'POST', 'permission_callback' => 'sse_encyclopedia_require_user', 'callback' => 'sse_encyclopedia_create_private_note' ) );
     register_rest_route( 'sse/v1', '/countries', array( 'methods' => 'GET', 'permission_callback' => '__return_true', 'callback' => 'sse_encyclopedia_get_countries', 'args' => array( 'locale' => array( 'default' => 'en', 'sanitize_callback' => 'sanitize_key' ) ) ) );
+    register_rest_route( 'sse/v1', '/case-studies', array( 'methods' => 'GET', 'permission_callback' => '__return_true', 'callback' => 'sse_encyclopedia_get_case_studies', 'args' => array( 'locale' => array( 'default' => 'en', 'sanitize_callback' => 'sanitize_key' ) ) ) );
+    register_rest_route( 'sse/v1', '/homepage', array( 'methods' => 'GET', 'permission_callback' => '__return_true', 'callback' => 'sse_encyclopedia_get_homepage', 'args' => array( 'locale' => array( 'default' => 'en', 'sanitize_callback' => 'sanitize_key' ) ) ) );
+    register_rest_route( 'sse/v1', '/impact/config', array( 'methods' => 'GET', 'permission_callback' => '__return_true', 'callback' => 'sse_encyclopedia_get_impact_config', 'args' => array( 'locale' => array( 'default' => 'en', 'sanitize_callback' => 'sanitize_key' ) ) ) );
+    register_rest_route( 'sse/v1', '/impact/reports', array( 'methods' => 'POST', 'permission_callback' => 'sse_encyclopedia_require_user', 'callback' => 'sse_encyclopedia_save_impact_report' ) );
 }
 add_action( 'rest_api_init', 'sse_encyclopedia_register_rest' );
+
+function sse_homepage_defaults() {
+    return array(
+        'fa' => array(
+            'brandTitle' => 'دانشنامه اقتصاد اجتماعی و همبستگی', 'brandSubtitle' => 'ترجمه فارسی مدخل‌های دانشنامه اقتصاد اجتماعی و همبستگی',
+            'nav' => array( array( 'label' => 'مدخل‌ها', 'href' => '/fa/archive', 'enabled' => 1 ), array( 'label' => 'درباره پروژه', 'href' => '#project', 'enabled' => 1 ), array( 'label' => 'همکاری با ما', 'href' => '#collaborate', 'enabled' => 1 ) ),
+            'eyebrow' => 'پروژه ترجمه و انتشار دانشنامه', 'heroTitle' => 'دسترسی فارسی به مفاهیم کلیدی', 'heroTitleAccent' => 'اقتصاد اجتماعی و همبستگی',
+            'heroDescription' => 'این وب‌سایت ترجمه فارسی مدخل‌های «دانشنامه اقتصاد اجتماعی و همبستگی» را در اختیار پژوهشگران، دانشجویان و علاقه‌مندان قرار می‌دهد. این پروژه توسط گروهی از مترجمان و محققان اقتصاد اجتماعی در ایران انجام می‌شود.',
+            'heroActions' => array( array( 'label' => 'مشاهده فهرست مدخل‌ها', 'href' => '/fa/archive', 'enabled' => 1 ), array( 'label' => 'وضعیت اقتصاد اجتماعی کشورها', 'href' => '/fa/country-explorer', 'enabled' => 1 ), array( 'label' => 'مطالعات موردی', 'href' => '/fa/case-studies', 'enabled' => 1 ), array( 'label' => 'محاسبه اثرگذاری', 'href' => '/fa/impact-calculator', 'enabled' => 1 ), array( 'label' => 'بایگانی', 'href' => '/fa/archive', 'enabled' => 1 ), array( 'label' => 'حاشیه نگاری', 'href' => '/fa/profile', 'enabled' => 1 ) ),
+            'searchTitle' => 'جستجو در دانشنامه', 'searchPlaceholder' => 'نام مدخل یا کلیدواژه را وارد کنید',
+            'quickLinks' => array( array( 'label' => 'مدخل‌ها', 'href' => '/fa/archive', 'enabled' => 1 ), array( 'label' => 'فهرست الفبایی', 'href' => '/fa/archive', 'enabled' => 1 ), array( 'label' => 'بایگانی', 'href' => '/fa/archive', 'enabled' => 1 ), array( 'label' => 'مدخل تصادفی', 'href' => '/fa/archive', 'enabled' => 1 ) ),
+            'sourceLabel' => 'منبع اصلی:', 'sourceText' => 'دانشنامه تدوین‌شده توسط کارگروه اقتصاد اجتماعی و همبستگی سازمان ملل متحد.',
+            'infoItems' => array( array( 'number' => '۰۱', 'text' => 'ترجمه و انتشار مدخل‌های تخصصی اقتصاد اجتماعی و همبستگی به زبان فارسی.', 'enabled' => 1 ), array( 'number' => '۰۲', 'text' => 'فعالیت علمی با همکاری گروهی از مترجمان و محققان اقتصاد اجتماعی در ایران.', 'enabled' => 1 ), array( 'number' => '۰۳', 'text' => 'فراهم‌کردن دسترسی آسان برای دانشجویان، پژوهشگران و علاقه‌مندان این حوزه.', 'enabled' => 1 ) ),
+            'introTitle' => 'درباره پروژه ترجمه فارسی', 'introText' => 'این وب‌سایت ترجمه فارسی مدخل‌های «دانشنامه اقتصاد اجتماعی و همبستگی» را منتشر می‌کند. ما گروهی از مترجمان و محققان اقتصاد اجتماعی در ایران هستیم که مدخل‌های این دانشنامه را که توسط کارگروه اقتصاد اجتماعی و همبستگی سازمان ملل متحد تدوین شده است، به فارسی ترجمه، بازبینی و در اختیار مخاطبان فارسی‌زبان قرار می‌دهیم.', 'teamLabel' => 'گروه مترجمان و محققان:', 'teamText' => 'پژوهشگران اقتصاد اجتماعی در ایران',
+            'introLinks' => array( array( 'label' => 'اعضای گروه', 'href' => '#team', 'enabled' => 1 ), array( 'label' => 'روش ترجمه و انتشار', 'href' => '#process', 'enabled' => 1 ) ), 'goalsTitle' => 'اهداف و فعالیت‌های این پروژه',
+            'goals' => array( 'ترجمه و انتشار فارسی مدخل‌های دانشنامه اقتصاد اجتماعی و همبستگی برای استفاده پژوهشگران، دانشجویان و علاقه‌مندان.', 'گسترش ادبیات علمی اقتصاد اجتماعی و همبستگی در ایران از طریق ترجمه، ویرایش و بازنشر محتوای معتبر.', 'فعالیت علمی و پژوهشی با تکیه بر همکاری مترجمان و محققان حوزه اقتصاد اجتماعی و همبستگی.' ),
+            'features' => array( array( 'icon' => '📘', 'title' => 'درباره دانشنامه', 'text' => 'این دانشنامه مجموعه‌ای از مدخل‌های تخصصی در حوزه اقتصاد اجتماعی و همبستگی است که توسط کارگروه اقتصاد اجتماعی و همبستگی سازمان ملل متحد تدوین شده است.', 'href' => '#encyclopedia', 'enabled' => 1 ), array( 'icon' => '✍️', 'title' => 'پروژه ترجمه فارسی', 'text' => 'در این پروژه، مدخل‌های منتخب دانشنامه با دقت علمی ترجمه، بازبینی و برای دسترسی مخاطبان فارسی‌زبان منتشر می‌شوند.', 'href' => '#project', 'enabled' => 1 ), array( 'icon' => '🧠', 'title' => 'پنل مطالعه پژوهشی', 'text' => 'نشانک‌ها، یادداشت‌ها و پیشرفت مطالعه خود را ذخیره کنید و هر زمان به ادامه پژوهش بازگردید.', 'href' => '/fa/profile', 'enabled' => 1 ) ),
+            'footerCopyright' => '© ۱۴۰۵ دانشنامه اقتصاد اجتماعی و همبستگی', 'footerLinks' => array( array( 'label' => 'تماس با ما', 'href' => '#contact', 'enabled' => 1 ), array( 'label' => 'همکاری علمی', 'href' => '#collaborate', 'enabled' => 1 ), array( 'label' => 'سیاست انتشار', 'href' => '#policy', 'enabled' => 1 ) ),
+        ),
+        'en' => array(
+            'brandTitle' => 'Social and Solidarity Economy Encyclopedia', 'brandSubtitle' => 'English translation and publication of encyclopedia entries',
+            'nav' => array( array( 'label' => 'Entries', 'href' => '/en/archive', 'enabled' => 1 ), array( 'label' => 'About', 'href' => '#project', 'enabled' => 1 ), array( 'label' => 'Collaborate', 'href' => '#collaborate', 'enabled' => 1 ) ),
+            'eyebrow' => 'Translation and publication project', 'heroTitle' => 'Accessible English entry points to the key concepts of', 'heroTitleAccent' => 'social and solidarity economy', 'heroDescription' => 'This website makes the English translations of the encyclopedia entries available to researchers, students, and interested readers. The project is carried out by a group of translators and researchers in the field.',
+            'heroActions' => array( array( 'label' => 'Browse entries', 'href' => '/en/archive', 'enabled' => 1 ), array( 'label' => 'Country Explorer', 'href' => '/en/country-explorer', 'enabled' => 1 ), array( 'label' => 'Case Studies Hub', 'href' => '/en/case-studies', 'enabled' => 1 ), array( 'label' => 'Impact Calculator', 'href' => '/en/impact-calculator', 'enabled' => 1 ), array( 'label' => 'Archive', 'href' => '/en/archive', 'enabled' => 1 ) ),
+            'searchTitle' => 'Search the encyclopedia', 'searchPlaceholder' => 'Search by keyword or title', 'quickLinks' => array( array( 'label' => 'Entries', 'href' => '/en/archive', 'enabled' => 1 ), array( 'label' => 'Alphabetical list', 'href' => '/en/archive', 'enabled' => 1 ), array( 'label' => 'Archive', 'href' => '/en/archive', 'enabled' => 1 ), array( 'label' => 'Random entry', 'href' => '/en/archive', 'enabled' => 1 ) ), 'sourceLabel' => 'Primary source:', 'sourceText' => 'Encyclopedia developed by the UN Social and Solidarity Economy working group.',
+            'infoItems' => array( array( 'number' => '01', 'text' => 'Publishing specialized entries in English for the social and solidarity economy.', 'enabled' => 1 ), array( 'number' => '02', 'text' => 'Scientific collaboration among translators and researchers in this field.', 'enabled' => 1 ), array( 'number' => '03', 'text' => 'Providing accessible knowledge for students, researchers, and the public.', 'enabled' => 1 ) ), 'introTitle' => 'About the English translation project', 'introText' => 'This website publishes English translations of the encyclopedia entries on the social and solidarity economy. A group of researchers and translators work to review and share these materials with English-speaking audiences.', 'teamLabel' => 'Translation team:', 'teamText' => 'researchers in the social and solidarity economy', 'introLinks' => array( array( 'label' => 'Team members', 'href' => '#team', 'enabled' => 1 ), array( 'label' => 'Translation process', 'href' => '#process', 'enabled' => 1 ) ), 'goalsTitle' => 'Goals and activities', 'goals' => array( 'Translate and publish encyclopedia entries for researchers, students, and interested readers.', 'Expand the body of literature in the field through careful translation and review.', 'Support collaborative research and academic publication in social and solidarity economy.' ),
+            'features' => array( array( 'icon' => '📘', 'title' => 'About the encyclopedia', 'text' => 'A professional reference work covering essential concepts, theories, and practices in the social and solidarity economy.', 'href' => '#encyclopedia', 'enabled' => 1 ), array( 'icon' => '✍️', 'title' => 'English translation project', 'text' => 'Select entries are translated carefully and made available for English-speaking audiences.', 'href' => '#project', 'enabled' => 1 ), array( 'icon' => '🧠', 'title' => 'Research workspace', 'text' => 'Save bookmarks, notes, and highlights, track reading progress, and return to your research dashboard anytime.', 'href' => '/en/profile', 'enabled' => 1 ) ), 'footerCopyright' => '© 2026 Social and Solidarity Economy Encyclopedia', 'footerLinks' => array( array( 'label' => 'Contact', 'href' => '#contact', 'enabled' => 1 ), array( 'label' => 'Scientific collaboration', 'href' => '#collaborate', 'enabled' => 1 ), array( 'label' => 'Publication policy', 'href' => '#policy', 'enabled' => 1 ) ),
+        ),
+    );
+}
+
+function sse_homepage_content() {
+    return wp_parse_args( (array) get_option( 'sse_homepage_content', array() ), sse_homepage_defaults() );
+}
+
+function sse_encyclopedia_get_homepage( WP_REST_Request $request ) {
+    $locale = 'fa' === $request->get_param( 'locale' ) ? 'fa' : 'en';
+    $content = sse_homepage_content();
+    return rest_ensure_response( $content[ $locale ] );
+}
+
+function sse_encyclopedia_get_impact_config( WP_REST_Request $request ) {
+    $locale = 'fa' === $request->get_param( 'locale' ) ? 'fa' : 'en';
+    $settings = sse_impact_get_settings();
+    $variables = sse_impact_get_variables();
+    $public_variables = array();
+    foreach ( $variables as $key => $variable ) {
+        if ( empty( $variable['enabled'] ) ) continue;
+        $public_variables[ $key ] = array(
+            'type' => $variable['type'], 'label' => $variable[ 'label_' . $locale ], 'help' => $variable[ 'help_' . $locale ],
+            'unit' => $variable[ 'unit_' . $locale ], 'default' => (float) $variable[ 'default_' . $locale ], 'min' => (float) $variable['min'], 'max' => (float) $variable['max'], 'required' => ! empty( $variable['required'] ),
+        );
+    }
+    return rest_ensure_response( array( 'title' => $settings[ 'title_' . $locale ], 'currency' => $settings[ 'currency_' . $locale ], 'numberLocale' => $settings[ 'number_locale_' . $locale ], 'formula' => $settings[ 'formula_' . $locale ], 'variables' => $public_variables ) );
+}
+
+function sse_encyclopedia_save_impact_report( WP_REST_Request $request ) {
+    $payload = (array) $request->get_json_params();
+    $locale = 'fa' === sanitize_key( $payload['language'] ?? '' ) ? 'fa' : 'en';
+    $report_id = wp_insert_post( array( 'post_type' => 'sse_impact_report', 'post_status' => 'private', 'post_title' => sanitize_text_field( $payload['title'] ?? ( 'Impact report ' . current_time( 'Y-m-d H:i' ) ) ), 'post_author' => get_current_user_id() ), true );
+    if ( is_wp_error( $report_id ) ) return $report_id;
+    $fields = array( 'scenario_id', 'investment', 'value', 'social_value', 'environmental_value', 'economic_value', 'adjustment', 'ratio' );
+    update_post_meta( $report_id, '_sse_impact_language', $locale );
+    foreach ( $fields as $field ) update_post_meta( $report_id, '_sse_impact_' . $field, is_numeric( $payload[ $field ] ?? null ) ? (float) $payload[ $field ] : sanitize_text_field( $payload[ $field ] ?? '' ) );
+    update_post_meta( $report_id, '_sse_impact_source', sanitize_textarea_field( $payload['source'] ?? '' ) );
+    return new WP_REST_Response( array( 'id' => $report_id, 'saved' => true ), 201 );
+}
 
 function sse_encyclopedia_get_countries( WP_REST_Request $request ) {
     $locale = 'fa' === $request->get_param( 'locale' ) ? 'fa' : 'en';
@@ -662,6 +783,43 @@ function sse_encyclopedia_get_countries( WP_REST_Request $request ) {
             'sources' => $meta['sources'],
             'translationStatus' => $meta['translation_status'],
             'lastUpdated' => $meta['last_updated'],
+        );
+    }
+    return rest_ensure_response( $result );
+}
+
+function sse_case_study_meta_defaults() {
+    return array(
+        'place' => '', 'type_en' => '', 'type_fa' => '', 'summary_en' => '', 'summary_fa' => '',
+        'metric_en' => '', 'metric_fa' => '', 'pdf_en' => 0, 'pdf_fa' => 0,
+        'published_en' => 0, 'published_fa' => 0, 'display_order' => 0,
+    );
+}
+
+function sse_case_study_get_meta( $post_id ) {
+    $meta = sse_case_study_meta_defaults();
+    foreach ( $meta as $key => $default ) {
+        $value = get_post_meta( $post_id, '_sse_case_' . $key, true );
+        if ( '' !== $value && null !== $value ) $meta[ $key ] = $value;
+    }
+    return $meta;
+}
+
+function sse_encyclopedia_get_case_studies( WP_REST_Request $request ) {
+    $locale = 'fa' === $request->get_param( 'locale' ) ? 'fa' : 'en';
+    $posts = get_posts( array( 'post_type' => 'sse_case_study', 'post_status' => 'publish', 'posts_per_page' => -1, 'orderby' => 'meta_value_num', 'meta_key' => '_sse_case_display_order', 'order' => 'ASC' ) );
+    $result = array();
+    foreach ( $posts as $post ) {
+        $meta = sse_case_study_get_meta( $post->ID );
+        if ( ! $meta[ 'published_' . $locale ] ) continue;
+        $pdf_id = (int) $meta[ 'pdf_' . $locale ];
+        $terms = wp_get_post_terms( $post->ID, 'sse_case_category', array( 'fields' => 'names' ) );
+        $result[] = array(
+            'id' => (int) $post->ID, 'slug' => $post->post_name,
+            'title' => get_post_meta( $post->ID, '_sse_case_title_' . $locale, true ),
+            'place' => $meta['place'], 'type' => $meta[ 'type_' . $locale ],
+            'category' => $terms ? $terms[0] : '', 'summary' => $meta[ 'summary_' . $locale ],
+            'metric' => $meta[ 'metric_' . $locale ], 'pdfUrl' => $pdf_id ? wp_get_attachment_url( $pdf_id ) : '',
         );
     }
     return rest_ensure_response( $result );
@@ -783,7 +941,13 @@ function sse_encyclopedia_create_private_note( WP_REST_Request $request ) {
 }
 
 function sse_encyclopedia_public_note_type( $commentdata ) {
-    if ( isset( $commentdata['comment_type'] ) && 'sse_public_note' === $commentdata['comment_type'] ) return $commentdata;
+    if ( isset( $commentdata['comment_type'] ) && 'sse_public_note' === $commentdata['comment_type'] ) {
+        $ip = sanitize_text_field( $commentdata['comment_author_IP'] ?? '' );
+        $key = 'sse_note_rate_' . md5( $ip . '|' . strtolower( (string) ( $commentdata['comment_author_email'] ?? '' ) ) );
+        if ( get_transient( $key ) ) return new WP_Error( 'sse_note_rate_limited', __( 'Please wait before submitting another note.', 'sse-encyclopedia' ) );
+        set_transient( $key, 1, MINUTE_IN_SECONDS );
+        $commentdata['comment_approved'] = 0;
+    }
     return $commentdata;
 }
 add_filter( 'preprocess_comment', 'sse_encyclopedia_public_note_type' );
@@ -845,7 +1009,7 @@ function sse_encyclopedia_import_public_note( $record, $parent_id = 0 ) {
         'comment_post_ID' => $post_id, 'comment_author' => sanitize_text_field( (string) ( $record['name'] ?? '' ) ),
         'comment_author_email' => sanitize_email( (string) ( $record['email'] ?? '' ) ), 'comment_content' => wp_kses_post( (string) ( $record['content'] ?? '' ) ),
         'comment_type' => 'sse_public_note',
-        'comment_date_gmt' => gmdate( 'Y-m-d H:i:s', strtotime( (string) ( $record['created_at'] ?? 'now' ) ) ), 'comment_parent' => (int) $parent_id, 'comment_approved' => 0,
+        'comment_date_gmt' => gmdate( 'Y-m-d H:i:s', strtotime( (string) ( $record['created_at'] ?? 'now' ) ) ), 'comment_parent' => (int) $parent_id, 'comment_approved' => 1,
     ) );
     if ( $comment_id ) { add_comment_meta( $comment_id, '_sse_legacy_comment_id', $legacy_id, true ); sse_encyclopedia_import_log( 'public_note', $legacy_id, $comment_id, 'imported' ); }
     return (int) $comment_id;

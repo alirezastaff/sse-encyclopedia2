@@ -22,7 +22,7 @@ export default function Header() {
             <Link href={base}>{isFa ? "خانه" : "Home"}</Link>
           </li>
           <li>
-            <Link href="/profile">{isFa ? "حاشیه نگاری" : "Marginal Notes"}</Link>
+            <Link href={isFa ? "/fa/profile" : "/profile"}>{isFa ? "حاشیه نگار" : "Marginal Notes"}</Link>
           </li>
           {isFa && status === "authenticated" ? (
             <>

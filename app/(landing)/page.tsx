@@ -252,7 +252,7 @@ export default function Home() {
               </Link>
 
               <Link
-                href="/login?callbackUrl=/profile"
+                href="/fa/profile"
                 style={{
                   height: "52px",
                   borderRadius: "16px",
@@ -277,7 +277,7 @@ export default function Home() {
                   e.currentTarget.style.boxShadow = "0 9px 24px rgba(30, 30, 30, 0.25)";
                 }}
               >
-                ورود به حاشیه‌نگاری
+                ورود به حاشیه نگار
               </Link>
             </div>
 

@@ -1,867 +1,156 @@
 import Link from "next/link";
+import {
+  ArrowLeft,
+  BookOpen,
+  Calculator,
+  FilePenLine,
+  Globe2,
+  Search,
+  UsersRound,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { getHomepageContent } from "@/lib/homepage";
+
+type HomeCard = readonly [string, string, string, string, string, string, string, LucideIcon];
+
+const cards: readonly HomeCard[] = [
+  ["دانشنامه اقتصاد اجتماعی", "دانشنامه اقتصاد اجتماعی", "مقالات عمیق، مفاهیم کلیدی و نظریه‌های بنیادین در اقتصاد اجتماعی و همبستگی.", "ورود به دانشنامه", "/fa/archive", "/homepage/encyclopedia.png", "card-large encyclopedia", BookOpen],
+  ["حاشیه‌نگار", "حاشیه‌نگار", "یادداشت‌های کوتاه، تأملات و دیدگاه‌های منتخب درباره ایده‌ها و بحث‌های اقتصاد اجتماعی.", "مشاهده یادداشت‌ها", "/fa/profile", "/homepage/marginalia.jpg", "card-large notes", FilePenLine],
+  ["کاوشگر کشورها", "کاوشگر کشورها", "داده‌ها و نمایه‌های اقتصاد اجتماعی را در کشورهای مختلف و مناطق جهان بررسی کنید.", "ورود به اطلس", "/fa/country-explorer", "/homepage/country-explorer.jpg", "card-small country", Globe2],
+  ["مرکز مطالعات موردی", "مرکز مطالعات موردی", "نمونه‌های واقعی از اثرگذاری، نوآوری و راهکارهای فراگیر از سراسر جهان.", "مشاهده مطالعات", "/fa/case-studies", "/homepage/case-studies.jpg", "card-small case-studies", UsersRound],
+   ["محاسبه‌گر اثرگذاری", "محاسبه‌گر اثرگذاری", "اثر اجتماعی و اقتصادی ایده‌ها، پروژه‌ها و سیاست‌های خود را برآورد کنید.", "محاسبه اثرگذاری", "/fa/impact-calculator", "/homepage/impact-calculator.jpg", "card-small impact", Calculator],
+];
+
+
+export default async function FaHomePage() {
+  await getHomepageContent("fa");
 
-const styles = `
-  @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&display=swap');
-
-  * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-  }
-
-  :root {
-    --red-dark: #7d1017;
-    --red-main: #a61922;
-    --red-soft: #c74b52;
-    --cream: #fbf7f1;
-    --text: #262626;
-    --muted: #686868;
-    --border: #eadfda;
-    --white: #ffffff;
-  }
-
-  body {
-    font-family: "Vazirmatn", Tahoma, Arial, sans-serif;
-    direction: rtl;
-    color: var(--text);
-    min-height: 100vh;
-    background:
-      radial-gradient(circle at 15% 10%, rgba(255, 255, 255, 0.18), transparent 28%),
-      radial-gradient(circle at 85% 12%, rgba(255, 220, 220, 0.20), transparent 26%),
-      linear-gradient(135deg, #681018 0%, #9b1722 42%, #c85b62 100%);
-    padding: 42px 18px;
-  }
-
-  .page-wrapper {
-    max-width: 1140px;
-    margin: 0 auto;
-    background: rgba(255, 252, 248, 0.97);
-    min-height: calc(100vh - 84px);
-    border-radius: 22px;
-    box-shadow:
-      0 30px 80px rgba(40, 0, 0, 0.32),
-      inset 0 1px 0 rgba(255, 255, 255, 0.75);
-    overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.45);
-  }
-
-  .inner {
-    padding: 34px 46px 36px;
-  }
-
-  .site-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 26px;
-    padding-bottom: 28px;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .brand {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-  }
-
-  .logo {
-    width: 54px;
-    height: 54px;
-    border-radius: 18px;
-    background: linear-gradient(135deg, #8d1119, #c5323b);
-    color: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 25px;
-    font-weight: 800;
-    box-shadow: 0 12px 24px rgba(155, 23, 29, 0.28);
-    flex-shrink: 0;
-    position: relative;
-  }
-
-  .logo::after {
-    content: "";
-    position: absolute;
-    inset: 7px;
-    border: 1px solid rgba(255,255,255,0.36);
-    border-radius: 13px;
-  }
-
-  .brand-text h1 {
-    font-size: 27px;
-    font-weight: 700;
-    letter-spacing: -1px;
-    color: #221f1f;
-    margin-bottom: 4px;
-  }
-
-  .brand-text span {
-    color: var(--muted);
-    font-size: 13px;
-    font-weight: 300;
-  }
-
-  .main-nav ul {
-    list-style: none;
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-  }
-
-  .main-nav a {
-    color: #4b4b4b;
-    background: #fff;
-    border: 1px solid #eee1dc;
-    text-decoration: none;
-    font-size: 13.5px;
-    font-weight: 400;
-    padding: 9px 14px;
-    border-radius: 999px;
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    transition: all 0.25s ease;
-    box-shadow: 0 4px 14px rgba(70, 30, 20, 0.04);
-  }
-
-  .main-nav a:hover {
-    color: var(--red-main);
-    border-color: #d8b1b4;
-    transform: translateY(-2px);
-    box-shadow: 0 8px 22px rgba(130, 20, 28, 0.10);
-  }
-
-  .nav-icon {
-    color: var(--red-main);
-    font-size: 12px;
-  }
-
-  .hero {
-    display: grid;
-    grid-template-columns: 1.2fr 0.8fr;
-    gap: 46px;
-    align-items: center;
-    padding: 54px 0 38px;
-  }
-
-  .eyebrow {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: #fff2f2;
-    color: var(--red-main);
-    border: 1px solid #f1c9cc;
-    padding: 7px 13px;
-    border-radius: 999px;
-    font-size: 13px;
-    font-weight: 500;
-    margin-bottom: 18px;
-  }
-
-  .eyebrow-dot {
-    width: 7px;
-    height: 7px;
-    background: var(--red-main);
-    border-radius: 50%;
-    box-shadow: 0 0 0 5px rgba(166, 25, 34, 0.10);
-  }
-
-  .hero h2 {
-    font-size: 35px;
-    line-height: 1.65;
-    letter-spacing: -1.4px;
-    font-weight: 800;
-    color: #211d1d;
-    margin-bottom: 18px;
-  }
-
-  .hero h2 span {
-    color: var(--red-main);
-  }
-
-  .hero p {
-    font-size: 16px;
-    line-height: 2.15;
-    color: #565656;
-    font-weight: 300;
-    max-width: 690px;
-  }
-
-  .hero-actions {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-    margin-top: 28px;
-  }
-
-  .primary-btn,
-  .secondary-btn {
-    height: 44px;
-    padding: 0 19px;
-    border-radius: 12px;
-    text-decoration: none;
-    font-size: 14px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    transition: all 0.25s ease;
-  }
-
-  .primary-btn {
-    background: linear-gradient(135deg, #8f141c, #bd2731);
-    color: #fff;
-    box-shadow: 0 14px 28px rgba(155, 23, 29, 0.22);
-  }
-
-  .primary-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 18px 34px rgba(155, 23, 29, 0.30);
-  }
-
-  .secondary-btn {
-    background: #fff;
-    color: #333;
-    border: 1px solid #eadbd6;
-  }
-
-  .secondary-btn:hover {
-    color: var(--red-main);
-    border-color: #d9b5b8;
-    transform: translateY(-2px);
-  }
-
-  .hero-panel {
-    background: linear-gradient(145deg, #ffffff, #fff8f6);
-    border: 1px solid #eaded9;
-    border-radius: 22px;
-    padding: 24px;
-    box-shadow: 0 18px 48px rgba(80, 35, 20, 0.10);
-    position: relative;
-    overflow: hidden;
-  }
-
-  .hero-panel::before {
-    content: "";
-    position: absolute;
-    width: 160px;
-    height: 160px;
-    border-radius: 50%;
-    background: rgba(166, 25, 34, 0.08);
-    left: -55px;
-    top: -55px;
-  }
-
-  .panel-title {
-    font-size: 15px;
-    color: #2e2e2e;
-    font-weight: 700;
-    margin-bottom: 18px;
-    position: relative;
-  }
-
-  .search-box {
-    position: relative;
-    margin-bottom: 14px;
-  }
-
-  .search-box input {
-    width: 100%;
-    height: 48px;
-    border: 1px solid #ded3cf;
-    background: #fff;
-    border-radius: 14px;
-    padding: 0 15px 0 48px;
-    font-family: inherit;
-    font-size: 14px;
-    outline: none;
-    transition: all 0.25s ease;
-  }
-
-  .search-box input:focus {
-    border-color: #bd6369;
-    box-shadow: 0 0 0 4px rgba(166, 25, 34, 0.08);
-  }
-
-  .search-box button {
-    position: absolute;
-    left: 13px;
-    top: 50%;
-    transform: translateY(-50%);
-    border: none;
-    background: transparent;
-    font-size: 17px;
-    cursor: pointer;
-    color: #777;
-  }
-
-  .quick-links {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-top: 16px;
-  }
-
-  .quick-links a {
-    background: #fbf7f5;
-    border: 1px solid #eaded9;
-    color: #444;
-    text-decoration: none;
-    font-size: 13px;
-    border-radius: 13px;
-    min-height: 42px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.22s ease;
-  }
-
-  .quick-links a:hover {
-    background: #fff;
-    color: var(--red-main);
-    border-color: #d8b1b4;
-  }
-
-  .status-box {
-    margin-top: 18px;
-    background: #fff;
-    border: 1px dashed #ddb8bb;
-    border-radius: 16px;
-    padding: 15px 16px;
-    font-size: 13px;
-    line-height: 1.9;
-    color: #666;
-  }
-
-  .status-box strong {
-    color: var(--red-main);
-    font-weight: 700;
-  }
-
-  .info-strip {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 14px;
-    margin-bottom: 34px;
-  }
-
-  .info-item {
-    background: #fff;
-    border: 1px solid #eaded9;
-    border-radius: 18px;
-    padding: 18px 20px;
-    box-shadow: 0 10px 28px rgba(70, 30, 20, 0.05);
-  }
-
-  .info-item span {
-    color: var(--red-main);
-    font-size: 24px;
-    font-weight: 800;
-    display: block;
-    margin-bottom: 7px;
-  }
-
-  .info-item p {
-    color: #666;
-    font-size: 13.5px;
-    line-height: 1.8;
-  }
-
-  .intro-card {
-    background: linear-gradient(135deg, #fff, #fffaf8);
-    border: 1px solid #eaded9;
-    border-radius: 22px;
-    box-shadow: 0 18px 48px rgba(70, 30, 20, 0.07);
-    padding: 30px 34px;
-    margin-bottom: 28px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .intro-card::before {
-    content: "";
-    position: absolute;
-    right: 0;
-    top: 30px;
-    width: 5px;
-    height: calc(100% - 60px);
-    background: linear-gradient(to bottom, var(--red-main), #d8686f);
-    border-radius: 999px;
-  }
-
-  .intro-card h3 {
-    font-size: 20px;
-    font-weight: 800;
-    margin-bottom: 13px;
-    color: #242424;
-  }
-
-  .intro-card p {
-    font-size: 15.5px;
-    line-height: 2.15;
-    color: #555;
-    font-weight: 300;
-  }
-
-  .intro-footer {
-    margin-top: 22px;
-    display: flex;
-    justify-content: space-between;
-    gap: 18px;
-    flex-wrap: wrap;
-    align-items: center;
-    font-size: 13.5px;
-    color: #333;
-    border-top: 1px solid #f0e5e1;
-    padding-top: 18px;
-  }
-
-  .intro-footer strong {
-    font-weight: 700;
-    color: #222;
-  }
-
-  .intro-links {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .intro-links a {
-    color: var(--red-main);
-    text-decoration: none;
-    border-bottom: 1px solid rgba(166, 25, 34, 0.35);
-  }
-
-  .support-section {
-    background: #fdf9f6;
-    border: 1px solid #efe2de;
-    border-radius: 20px;
-    padding: 24px 28px;
-    margin-bottom: 28px;
-  }
-
-  .support-section h3 {
-    font-size: 17px;
-    font-weight: 800;
-    margin-bottom: 15px;
-    color: #222;
-  }
-
-  .support-section ul {
-    padding-right: 22px;
-    line-height: 2.15;
-    font-size: 14px;
-    color: #4c4c4c;
-  }
-
-  .support-section li {
-    margin-bottom: 5px;
-  }
-
-  .support-section li::marker {
-    color: var(--red-main);
-  }
-
-  .support-section a {
-    color: var(--red-main);
-    text-decoration: none;
-    border-bottom: 1px solid rgba(166, 25, 34, 0.35);
-  }
-
-  .feature-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 18px;
-    margin-top: 26px;
-  }
-
-  .feature-card {
-    background: #fff;
-    border: 1px solid #eaded9;
-    border-radius: 20px;
-    padding: 24px 22px;
-    box-shadow: 0 14px 38px rgba(70, 30, 20, 0.06);
-    transition: all 0.25s ease;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .feature-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 20px 48px rgba(80, 25, 25, 0.11);
-    border-color: #ddb9bb;
-  }
-
-  .feature-card::before {
-    content: "";
-    position: absolute;
-    width: 86px;
-    height: 86px;
-    border-radius: 50%;
-    background: rgba(166, 25, 34, 0.06);
-    left: -35px;
-    top: -35px;
-  }
-
-  .card-icon {
-    width: 42px;
-    height: 42px;
-    border-radius: 14px;
-    background: #fff2f2;
-    color: var(--red-main);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 19px;
-    margin-bottom: 15px;
-    position: relative;
-  }
-
-  .feature-card h3 {
-    color: #262626;
-    font-size: 16px;
-    font-weight: 800;
-    margin-bottom: 10px;
-    position: relative;
-  }
-
-  .feature-card p {
-    font-size: 13.5px;
-    line-height: 2;
-    color: #5f5f5f;
-    font-weight: 300;
-    position: relative;
-  }
-
-  .site-footer {
-    border-top: 1px solid #eaded9;
-    padding-top: 20px;
-    margin-top: 34px;
-    display: flex;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 12px;
-    color: #686868;
-    font-size: 13px;
-  }
-
-  .site-footer a {
-    color: var(--red-main);
-    text-decoration: none;
-  }
-
-  .site-footer a:hover {
-    text-decoration: underline;
-  }
-
-  @media (max-width: 950px) {
-    body {
-      padding: 24px 14px;
-    }
-
-    .inner {
-      padding: 28px 26px 30px;
-    }
-
-    .site-header {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-
-    .main-nav ul {
-      justify-content: flex-start;
-    }
-
-    .hero {
-      grid-template-columns: 1fr;
-      gap: 30px;
-      padding-top: 38px;
-    }
-
-    .hero h2 {
-      font-size: 29px;
-    }
-
-    .info-strip,
-    .feature-grid {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  @media (max-width: 560px) {
-    body {
-      padding: 14px 9px;
-    }
-
-    .page-wrapper {
-      border-radius: 18px;
-    }
-
-    .inner {
-      padding: 24px 18px 26px;
-    }
-
-    .brand {
-      align-items: flex-start;
-    }
-
-    .logo {
-      width: 48px;
-      height: 48px;
-      border-radius: 16px;
-    }
-
-    .brand-text h1 {
-      font-size: 21px;
-      line-height: 1.55;
-    }
-
-    .brand-text span {
-      font-size: 12px;
-    }
-
-    .main-nav ul {
-      width: 100%;
-      gap: 8px;
-    }
-
-    .main-nav a {
-      font-size: 12.5px;
-      padding: 8px 11px;
-    }
-
-    .hero h2 {
-      font-size: 24px;
-    }
-
-    .hero p,
-    .intro-card p {
-      font-size: 14.5px;
-    }
-
-    .hero-actions {
-      flex-direction: column;
-    }
-
-    .primary-btn,
-    .secondary-btn {
-      width: 100%;
-    }
-
-    .quick-links {
-      grid-template-columns: 1fr;
-    }
-
-    .intro-card,
-    .support-section {
-      padding: 23px 20px;
-    }
-
-    .intro-footer,
-    .site-footer {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-  }
-`;
-
-export default function FaHomePage() {
   return (
-    <>
-      <style>{styles}</style>
-
-      <div className="page-wrapper">
-        <div className="inner">
-          <header className="site-header">
-            <div className="brand">
-              <div className="logo">هـ</div>
-
-              <div className="brand-text">
-                <h1>دانشنامه اقتصاد اجتماعی و همبستگی</h1>
-                <span>ترجمه فارسی مدخل‌های دانشنامه اقتصاد اجتماعی و همبستگی</span>
-              </div>
-            </div>
-
-            <nav className="main-nav">
-              <ul>
-                <li>
-                  <a href="#">
-                    <span className="nav-icon">▣</span>
-                    مدخل‌ها
-                  </a>
-                </li>
-                <li>
-                  <a href="#">
-                    <span className="nav-icon">●</span>
-                    درباره پروژه
-                  </a>
-                </li>
-                <li>
-                  <a href="#">
-                    <span className="nav-icon">◆</span>
-                    همکاری با ما
-                  </a>
-                </li>
-              </ul>
-            </nav>
-          </header>
-
-          <main>
-            <section className="hero">
-              <div className="hero-content">
-                <div className="eyebrow">
-                  <span className="eyebrow-dot"></span>
-                  پروژه ترجمه و انتشار دانشنامه
-                </div>
-
-                <h2>
-                  دسترسی فارسی به مفاهیم کلیدی
-                  <span> اقتصاد اجتماعی و همبستگی</span>
-                </h2>
-
-                <p>
-                  این وب‌سایت ترجمه فارسی مدخل‌های «دانشنامه اقتصاد اجتماعی و همبستگی» را
-                  در اختیار پژوهشگران، دانشجویان و علاقه‌مندان قرار می‌دهد. این پروژه
-                  توسط گروهی از مترجمان و محققان اقتصاد اجتماعی در ایران انجام می‌شود.
-                </p>
-
-                <div className="hero-actions">
-                  <Link href="/fa/archive" className="primary-btn">مشاهده فهرست مدخل‌ها</Link>
-                  <Link href="/fa/country-explorer" className="secondary-btn">وضعیت اقتصاد اجتماعی کشورها</Link>
-                  <Link href="/fa/case-studies" className="secondary-btn">مطالعات موردی</Link>
-                  <Link href="/fa/impact-calculator" className="secondary-btn">محاسبه اثرگذاری</Link>
-                  <Link href="/fa/archive" className="secondary-btn">بایگانی</Link>
-                  <Link href="/fa/profile" className="secondary-btn">حاشیه نگاری</Link>
-                </div>
-              </div>
-
-              <aside className="hero-panel">
-                <div className="panel-title">جستجو در دانشنامه</div>
-
-                <div className="search-box">
-                  <input type="text" placeholder="نام مدخل یا کلیدواژه را وارد کنید" />
-                  <button aria-label="جستجو">🔍</button>
-                </div>
-
-                <div className="quick-links">
-                  <Link href="/fa/archive">مدخل‌ها</Link>
-                  <Link href="/fa/archive">فهرست الفبایی</Link>
-                  <Link href="/fa/archive">بایگانی</Link>
-                  <Link href="/fa/archive">مدخل تصادفی</Link>
-                </div>
-
-                <div className="status-box">
-                  <strong>منبع اصلی:</strong>
-                  دانشنامه تدوین‌شده توسط کارگروه اقتصاد اجتماعی و همبستگی سازمان ملل متحد.
-                </div>
-              </aside>
-            </section>
-
-            <section className="info-strip">
-              <div className="info-item">
-                <span>۰۱</span>
-                <p>ترجمه و انتشار مدخل‌های تخصصی اقتصاد اجتماعی و همبستگی به زبان فارسی.</p>
-              </div>
-
-              <div className="info-item">
-                <span>۰۲</span>
-                <p>فعالیت علمی با همکاری گروهی از مترجمان و محققان اقتصاد اجتماعی در ایران.</p>
-              </div>
-
-              <div className="info-item">
-                <span>۰۳</span>
-                <p>فراهم‌کردن دسترسی آسان برای دانشجویان، پژوهشگران و علاقه‌مندان این حوزه.</p>
-              </div>
-            </section>
-
-            <section className="intro-card">
-              <h3>درباره پروژه ترجمه فارسی</h3>
-
-              <p>
-                این وب‌سایت ترجمه فارسی مدخل‌های «دانشنامه اقتصاد اجتماعی و همبستگی» را
-                منتشر می‌کند. ما گروهی از مترجمان و محققان اقتصاد اجتماعی در ایران هستیم
-                که مدخل‌های این دانشنامه را که توسط کارگروه اقتصاد اجتماعی و همبستگی
-                سازمان ملل متحد تدوین شده است، به فارسی ترجمه، بازبینی و در اختیار
-                مخاطبان فارسی‌زبان قرار می‌دهیم.
-              </p>
-
-              <div className="intro-footer">
-                <div>
-                  <strong>گروه مترجمان و محققان:</strong>
-                  پژوهشگران اقتصاد اجتماعی در ایران
-                </div>
-
-                <div className="intro-links">
-                  <a href="#">اعضای گروه</a>
-                  <span>|</span>
-                  <a href="#">روش ترجمه و انتشار</a>
-                </div>
-              </div>
-            </section>
-
-            <section className="support-section">
-              <h3>اهداف و فعالیت‌های این پروژه</h3>
-
-              <ul>
-                <li>
-                  ترجمه و انتشار فارسی مدخل‌های دانشنامه اقتصاد اجتماعی و همبستگی برای استفاده پژوهشگران، دانشجویان و علاقه‌مندان.
-                </li>
-                <li>
-                  گسترش ادبیات علمی اقتصاد اجتماعی و همبستگی در ایران از طریق ترجمه، ویرایش و بازنشر محتوای معتبر.
-                </li>
-                <li>
-                  فعالیت علمی و پژوهشی با تکیه بر همکاری مترجمان و محققان حوزه اقتصاد اجتماعی و همبستگی.
-                </li>
-              </ul>
-            </section>
-
-            <section className="feature-grid">
-              <article className="feature-card">
-                <div className="card-icon">📘</div>
-                <h3>درباره دانشنامه</h3>
-                <p>
-                  این دانشنامه مجموعه‌ای از مدخل‌های تخصصی در حوزه اقتصاد اجتماعی و همبستگی
-                  است که توسط کارگروه اقتصاد اجتماعی و همبستگی سازمان ملل متحد تدوین شده است.
-                </p>
-              </article>
-
-              <article className="feature-card">
-                <div className="card-icon">✍️</div>
-                <h3>پروژه ترجمه فارسی</h3>
-                <p>
-                  در این پروژه، مدخل‌های منتخب دانشنامه با دقت علمی ترجمه، بازبینی و
-                  برای دسترسی مخاطبان فارسی‌زبان منتشر می‌شوند.
-                </p>
-              </article>
-
-
-              <article className="feature-card">
-                <div className="card-icon">🧠</div>
-                <h3>پنل مطالعه پژوهشی</h3>
-                <p>
-                  نشانک‌ها، یادداشت‌ها و پیشرفت مطالعه خود را ذخیره کنید و هر زمان به
-                  ادامه پژوهش بازگردید.
-                </p>
-              </article>
-            </section>
-          </main>
-
-          <footer className="site-footer">
-            <div>© ۱۴۰۵ دانشنامه اقتصاد اجتماعی و همبستگی</div>
-
-            <div>
-              <a href="#">تماس با ما</a>
-              |
-              <a href="#">همکاری علمی</a>
-              |
-              <a href="#">سیاست انتشار</a>
-            </div>
-          </footer>
-        </div>
+    <main className="knowledge-home" dir="rtl">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Tanha:wght@700;800;900&family=Vazirmatn:wght@400;500;600;700;800&display=swap');
+        .knowledge-home { --ink:#092b2b; --green:#075c55; --cream:#f7f7f1; --muted:#526878; min-height:100vh; background:var(--cream); color:var(--ink); direction:rtl; text-align:right; font-family:'Vazir','Vazirmatn',Tahoma,sans-serif; overflow:hidden; }
+        .knowledge-shell { max-width:1380px; margin:0 auto; padding:28px 36px 42px; }
+        .knowledge-header { display:flex; align-items:center; gap:38px; min-height:72px; }
+        .knowledge-logo { width:270px; display:block; }
+        .knowledge-nav { display:flex; align-items:center; justify-content:flex-start; flex:0 1 auto; gap:28px; }
+        .knowledge-nav a { display:inline-flex; align-items:center; gap:5px; color:var(--ink); text-decoration:none; white-space:nowrap; font-size:12px; }
+        .knowledge-nav a:first-child { border-bottom:2px solid var(--green); padding:21px 0 12px; }
+        .knowledge-tools { display:flex; align-items:center; gap:20px; margin-right:auto; }
+        .language-switch { display:flex; border:1px solid #c9d0ce; border-radius:25px; overflow:hidden; }
+        .language-switch span { display:block; padding:8px 15px; font-size:11px; }
+        .language-switch .active { color:#fff; background:var(--green); }
+        .top-search { width:17px; height:17px; }
+        .knowledge-hero { position:relative; min-height:300px; padding:39px 0 22px; }
+        .hero-copy { position:relative; z-index:2; max-width:750px; }
+        .hero-kicker { color:var(--green); font-size:10px; font-weight:700; letter-spacing:0; word-spacing:4px; margin-bottom:16px; }
+        .hero-kicker span { color:#68817c; }
+        .hero-copy h1 { max-width:700px; margin:0; font-family:'Tanha','Vazirmatn',Tahoma,sans-serif; font-size:clamp(3.1rem,4.8vw,4.8rem); line-height:1.08; font-weight:800; letter-spacing:0; }
+        .hero-copy p { max-width:500px; margin:16px 0 0; color:var(--muted); font-size:14px; line-height:1.9; }
+        .hero-image { position:absolute; left:0; bottom:-10px; width:500px; }
+        .hero-image img { width:100%; display:block; transform:scaleX(-1); }
+        .knowledge-search { display:flex; align-items:center; gap:17px; width:68%; height:58px; margin:0 0 28px; padding:0 19px 0 8px; border:1px solid #e5e7e0; border-radius:34px; background:#fff; box-shadow:0 8px 22px rgba(22,55,49,.06); color:var(--muted); direction:rtl; box-sizing:border-box; }
+        .search-glass { width:17px; color:var(--green); flex:none; }
+        .search-placeholder { flex:1; font-size:11px; text-align:right; }
+        .search-divider { width:1px; height:24px; flex:none; background:#e1e4df; }
+        .search-filter { padding:0 16px; font-size:11px; white-space:nowrap; }
+        .search-submit { display:grid; place-items:center; width:43px; height:43px; border-radius:50%; background:var(--green); color:#fff; }
+        .knowledge-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:10px; }
+        .knowledge-card { position:relative; min-height:220px; overflow:hidden; border-radius:16px; background:#174a45; color:#fff; text-align:right; }
+        .knowledge-card:after { content:''; position:absolute; inset:0; background:linear-gradient(-90deg,rgba(2,24,23,.86),rgba(2,24,23,.2)); }
+        .knowledge-card img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; transform:scaleX(-1); }
+        .knowledge-card .card-content { position:relative; z-index:2; display:flex; flex-direction:column; align-items:flex-start; min-height:220px; padding:20px 22px 18px; }
+        .card-large { grid-column:span 3; min-height:250px; }
+        .card-large .card-content { min-height:250px; }
+        .notes:after { background:linear-gradient(-90deg,rgba(20,26,20,.82),rgba(20,26,20,.15)); }
+        .notes img { object-position:center 68%; }
+        .card-small { grid-column:span 2; }
+        .country:after { background:linear-gradient(-90deg,rgba(1,42,44,.88),rgba(4,82,78,.22)); }
+        .country img { object-position:right center; }
+        .case-studies:after { background:linear-gradient(-90deg,rgba(53,34,17,.82),rgba(36,42,27,.18)); }
+        .case-studies img { object-position:center bottom; }
+        .impact:after { background:linear-gradient(-90deg,rgba(2,49,34,.88),rgba(9,86,63,.15)); }
+        .impact img { object-position:left center; }
+        .card-heading { display:flex; align-items:center; gap:8px; }
+        .card-icon { display:grid; place-items:center; width:25px; height:25px; flex:none; border-radius:50%; background:rgba(5,91,83,.96); }
+        .card-icon svg { width:14px; height:14px; }
+        .card-label { display:flex; align-items:center; padding:5px 9px; border:1px solid rgba(255,255,255,.8); border-radius:18px; font-size:9px; letter-spacing:0; }
+        .knowledge-card h2 { max-width:330px; margin:13px 0 5px; font-size:29px; line-height:1.25; font-weight:700; }
+        .card-small h2 { font-size:23px; }
+        .knowledge-card p { max-width:255px; margin:0; font-size:12px; line-height:1.65; }
+        .card-button { display:inline-flex; align-items:center; gap:12px; margin-top:auto; padding:8px 13px; border-radius:25px; background:#fff; color:var(--ink); text-decoration:none; font-size:10px; font-weight:700; white-space:nowrap; }
+        .card-button svg { width:14px; height:14px; }
+        @media (min-width:761px) and (max-height:900px) {
+          .knowledge-shell { padding:18px 30px 24px; }
+          .knowledge-header { min-height:54px; gap:22px; }
+          .knowledge-logo { width:220px; }
+          .knowledge-nav { gap:22px; }
+          .knowledge-nav a { font-size:11px; }
+          .knowledge-nav a:first-child { padding:12px 0 8px; }
+          .knowledge-tools { gap:12px; }
+          .language-switch span { padding:6px 11px; }
+          .knowledge-hero { min-height:170px; padding:12px 0 6px; }
+          .hero-kicker { margin-bottom:10px; }
+          .hero-copy h1 { font-size:clamp(2.7rem,4.6vw,3.6rem); }
+          .hero-copy p { margin-top:10px; font-size:13px; }
+          .hero-image { width:410px; bottom:-5px; }
+          .knowledge-search { width:64%; height:42px; margin-bottom:14px; gap:10px; padding:0 12px 0 6px; }
+          .search-divider { height:20px; }
+          .search-filter { padding:0 10px; }
+          .search-submit { width:32px; height:32px; }
+          .knowledge-grid { gap:8px; }
+          .knowledge-card { min-height:165px; }
+          .card-large, .card-large .card-content { min-height:190px; }
+          .knowledge-card .card-content { min-height:165px; padding:13px 16px 12px; }
+          .card-heading { gap:6px; }
+          .card-icon { width:22px; height:22px; }
+          .card-icon svg { width:12px; height:12px; }
+          .card-label { padding:4px 7px; font-size:9px; }
+          .knowledge-card h2 { margin:8px 0 4px; font-size:22px; }
+          .card-small h2 { font-size:19px; }
+          .knowledge-card p { font-size:11px; line-height:1.5; }
+          .card-button { gap:8px; padding:5px 9px; font-size:9px; }
+          .card-button svg { width:12px; height:12px; }
+        }
+        @media (max-width:1100px) {
+          .knowledge-shell { padding:24px; }
+          .knowledge-logo { width:230px; }
+          .knowledge-header { gap:22px; }
+          .knowledge-nav { gap:18px; }
+          .knowledge-nav a { font-size:10px; }
+          .hero-image { left:0; opacity:.6; }
+          .knowledge-search { width:68%; }
+          .hero-copy h1 { font-size:clamp(3rem,6vw,5rem); }
+        }
+        @media (max-width:760px) {
+          .knowledge-shell { padding:18px 16px 30px; }
+          .knowledge-header { align-items:flex-start; flex-wrap:wrap; gap:18px; }
+          .knowledge-logo { width:230px; }
+          .knowledge-nav { order:3; flex-basis:100%; overflow:auto; padding-bottom:7px; justify-content:flex-start; }
+          .knowledge-nav a:first-child { padding:8px 0; }
+          .knowledge-tools { margin-right:auto; }
+          .knowledge-hero { min-height:410px; padding-top:34px; }
+          .hero-copy h1 { font-size:clamp(3rem,14vw,4.5rem); }
+          .hero-image { width:470px; left:0; bottom:0; opacity:.45; }
+          .knowledge-search { width:100%; height:auto; min-height:58px; flex-wrap:wrap; padding:12px 16px; gap:10px; }
+          .search-placeholder { min-width:calc(100% - 42px); }
+          .search-filter { display:none; }
+          .search-submit { width:40px; height:40px; margin-right:auto; }
+          .knowledge-grid { grid-template-columns:1fr; }
+          .card-large,.card-small { grid-column:auto; min-height:250px; }
+          .card-large .card-content, .knowledge-card .card-content { min-height:250px; }
+        }
+      `}</style>
+      <div className="knowledge-shell">
+        <header className="knowledge-header">
+          <Link href="/fa"><img className="knowledge-logo" src="/homepage/persian-logo.png" alt="پلتفرم دانشی اقتصاد اجتماعی و همبستگی" /></Link>
+          <nav className="knowledge-nav"><Link href="/fa">خانه</Link><Link href="#platform-introduction">معرفی پلتفرم</Link><Link href="#about-us">درباره ما</Link><Link href="#contact-us">تماس با ما</Link></nav>
+          <div className="knowledge-tools"><div className="language-switch"><Link href="/en"><span>EN</span></Link><span className="active">FA</span></div><Search className="top-search" aria-hidden="true" /></div>
+        </header>
+        <section className="knowledge-hero"><div className="hero-copy"><div className="hero-kicker">روایتی جامع از دانش و تجربه اقتصاد اجتماعی</div><h1>پلتفرم دانشی اقتصاد اجتماعی</h1><p>مرجعی جامع برای دسترسی به مفاهیم، نظریه‌ها، پژوهش‌ها، تجربه‌ها و منابع تخصصی در حوزه اقتصاد اجتماعی و همبستگی</p></div><div className="hero-image"><img src="/homepage/city.png" alt="چشم‌انداز شهر و جامعه" /></div></section>
+        <div className="knowledge-search"><Search className="search-glass" aria-hidden="true" /><span className="search-placeholder">جست‌وجوی مقاله، کشور، موضوع، نویسنده یا کلیدواژه...</span><span className="search-divider" aria-hidden="true" /><span className="search-filter">همه محتوا　⌄</span><span className="search-divider" aria-hidden="true" /><span className="search-filter">همه دسته‌ها　⌄</span><span className="search-submit"><Search size={17} /></span></div>
+        <section className="knowledge-grid">{cards.map(([label, title, text, action, href, image, className, Icon]) => <article className={`knowledge-card ${className}`} key={title}><img src={image} alt="" /><div className="card-content"><div className="card-heading"><span className="card-icon"><Icon aria-hidden="true" /></span><span className="card-label">{label}</span></div><h2>{title}</h2><p>{text}</p><Link className="card-button" href={href}>{action}<ArrowLeft /></Link></div></article>)}</section>
       </div>
-    </>
+    </main>
   );
 }

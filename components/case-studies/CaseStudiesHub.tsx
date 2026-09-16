@@ -1,15 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type CaseStudy = {
+  id?: number;
+  slug?: string;
   title: string;
   place: string;
   type: string;
   category: string;
   summary: string;
   metric: string;
+  pdfUrl?: string;
 };
 
 const caseStudies: CaseStudy[] = [
@@ -36,7 +39,17 @@ function localizeCount(value: number, locale: "en" | "fa") {
 
 export default function CaseStudiesHub({ locale = "en" }: { locale?: "en" | "fa" }) {
   const isPersian = locale === "fa";
-  const studies = isPersian ? faCaseStudies : caseStudies;
+  const fallbackStudies = isPersian ? faCaseStudies : caseStudies;
+  const [remoteStudies, setRemoteStudies] = useState<CaseStudy[] | null>(null);
+  useEffect(() => {
+    const wordpressUrl = process.env.NEXT_PUBLIC_WORDPRESS_URL?.replace(/\/$/, "");
+    if (!wordpressUrl) return;
+    fetch(`${wordpressUrl}/wp-json/sse/v1/case-studies?locale=${locale}`)
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error("Case studies request failed")))
+      .then((items: CaseStudy[]) => setRemoteStudies(items))
+      .catch(() => setRemoteStudies(null));
+  }, [locale]);
+  const studies = remoteStudies && remoteStudies.length > 0 ? remoteStudies : fallbackStudies;
   const allCategory = isPersian ? "همه" : "All";
   const [activeCategory, setActiveCategory] = useState(allCategory);
   const categories = [allCategory, ...Array.from(new Set(studies.map((study) => study.category)))];
@@ -68,6 +81,7 @@ export default function CaseStudiesHub({ locale = "en" }: { locale?: "en" | "fa"
         .case-place { margin:0 0 14px; color:var(--teal); font-size:13px; font-weight:800; }
         .case-card p { margin:0; color:var(--muted); line-height:1.7; }
         .case-metric { margin-top:auto; padding-top:24px; color:var(--ink); font-size:13px; font-weight:800; }
+        .case-pdf { display:inline-block; margin-top:16px; color:var(--teal); font-size:13px; font-weight:800; text-decoration:none; }
         .case-footer { display:flex; flex-wrap:wrap; justify-content:space-between; gap:18px; margin-top:52px; padding-top:22px; border-top:1px solid var(--line); color:var(--muted); }
         .case-footer a { color:var(--teal); font-weight:800; text-decoration:none; }
         @media(max-width:900px){.case-hero{grid-template-columns:1fr;gap:24px}.case-grid{grid-template-columns:repeat(2,1fr)}}
@@ -80,7 +94,7 @@ export default function CaseStudiesHub({ locale = "en" }: { locale?: "en" | "fa"
           <div className="case-signal"><strong>{localizeCount(studies.length, locale)} {isPersian ? "یادداشت میدانی" : "field notes"}</strong><span>{isPersian ? "نقطه‌های آغازینِ گردآوری‌شده برای پژوهشگران، کنشگران، تأمین‌کنندگان مالی و هر کسی که برای ساخت اقتصادی دموکراتیک‌تر تلاش می‌کند." : "Curated starting points for researchers, organizers, funders, and anyone building a more democratic economy."}</span></div>
         </header>
         <div className="case-toolbar" aria-label={isPersian ? "فیلتر مطالعات موردی" : "Filter case studies"}>{categories.map((category) => <button className={`case-filter ${activeCategory === category ? "active" : ""}`} key={category} type="button" onClick={() => setActiveCategory(category)}>{category}</button>)}</div>
-        <section className="case-grid" aria-live="polite">{visibleStudies.map((study) => <article className="case-card" key={study.title}><div className="case-card-top"><span>{study.type}</span><span>↗</span></div><h2>{study.title}</h2><p className="case-place">{study.place}</p><p>{study.summary}</p><div className="case-metric">{study.metric}</div></article>)}</section>
+        <section className="case-grid" aria-live="polite">{visibleStudies.map((study) => <article className="case-card" key={study.slug ?? study.title}><div className="case-card-top"><span>{study.type}</span><span>↗</span></div><h2>{study.title}</h2><p className="case-place">{study.place}</p><p>{study.summary}</p><div className="case-metric">{study.metric}</div>{study.pdfUrl && <a className="case-pdf" href={study.pdfUrl} target="_blank" rel="noreferrer">{isPersian ? "دریافت PDF مطالعه" : "Download case study PDF"}</a>}</article>)}</section>
         <footer className="case-footer"><span>{isPersian ? "با رشد این مرکز، روایت‌های بیشتری افزوده خواهد شد." : "More stories will be added as the hub grows."}</span><Link href={isPersian ? "/fa/impact-calculator" : "/en/impact-calculator"}>{isPersian ? "اثرگذاری فعالیت خود را بسنجید ←" : "Measure the impact of your own work →"}</Link></footer>
       </div>
     </main>

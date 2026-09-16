@@ -46,4 +46,16 @@ The dashboard also includes an **SSE Encyclopedia** menu for editorial managemen
 - **Parts and sections:** manage the `sse_part` taxonomy used by the archive hierarchy.
 - **Entry list tools:** language filtering and columns for language, part, page, translation status, and review status.
 
+## Case Studies
+
+The dashboard includes a bilingual **Case Studies** content section. Each case study is one shared record with English and Persian titles, summaries, types, full editors, independent publication toggles, and a separate PDF attachment for each language. PDFs are selected from the WordPress Media Library and are exposed through the public endpoint only when that language is published.
+
+The public API is available at `/wp-json/sse/v1/case-studies?locale=en` or `?locale=fa`. The Next.js Case Studies Hub uses this endpoint when `NEXT_PUBLIC_WORDPRESS_URL` is configured and keeps its local sample records as a migration fallback.
+
 The panel stores editorial fields as post metadata on `sse_article`. The record's selected language is synchronized to the regular WordPress title, excerpt, and content so the existing theme and REST consumers continue to work. Keep the same translation-group ID on the English and Persian records when they represent one entry.
+
+## Homepage administration
+
+The **SSE Encyclopedia > Homepage** screen manages the public `/fa` and `/en` pages independently. It includes brand text, navigation, hero copy and buttons, search panel labels, numbered highlights, the translation-project introduction, translator/researcher text, goals and activities, feature cards, and footer links. Repeatable groups are edited as JSON rows with an `enabled` flag so items can be added, removed, reordered, or hidden without changing the Next.js code.
+
+The frontend reads the published content from `/wp-json/sse/v1/homepage?locale=fa` or `?locale=en`. If WordPress is unavailable or the option has not been configured, the built-in defaults in `lib/homepage.ts` keep both pages available.
