@@ -13,303 +13,384 @@ export default function Home() {
           box-sizing: border-box;
         }
 
-        body {
+        html, body {
           margin: 0;
+          min-height: 100%;
+          background: #061a24;
           font-family: "Vazirmatn", Tahoma, Arial, sans-serif;
+        }
+
+        body {
+          min-height: 100vh;
+        }
+
+        a {
+          text-decoration: none;
         }
       `}</style>
 
-      <main
-        style={{
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "20px",
-          background: `
-            linear-gradient(135deg, #2a0a12 0%, #5c0f1a 40%, #9c1e2e 70%, #d44a5e 100%),
-            radial-gradient(circle at 25% 25%, rgba(255,255,255,0.18), transparent 60%),
-            radial-gradient(circle at 75% 75%, rgba(255, 180, 190, 0.15), transparent 60%)
-          `,
-          position: "relative",
-          overflow: "hidden",
-        }}
-      >
-        {/* Subtle Background Texture */}
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            background: "url('https://picsum.photos/id/1015/2000/1200') center/cover",
-            opacity: 0.07,
-            mixBlendMode: "overlay",
-            zIndex: -1,
-          }}
-        />
+      <main className="landing-page">
+        <div className="top-right-tag">IDEAS / PEOPLE / SUSTAINABLE FUTURES</div>
+        <div className="vertical-tag">SOCIAL AND SOLIDARITY ECONOMY</div>
 
-        {/* Main Card - Wider & Shorter */}
-        <div
-          style={{
-            background: "rgba(255, 252, 248, 0.96)",
-            backdropFilter: "blur(50px)",
-            WebkitBackdropFilter: "blur(50px)",
-            border: "1px solid rgba(255, 255, 255, 0.92)",
-            borderRadius: "42px",
-            boxShadow: "0 70px 160px rgba(40, 8, 12, 0.42), inset 0 8px 20px rgba(255, 255, 255, 0.9)",
-            maxWidth: "960px",
-            width: "100%",
-            padding: "52px 58px",
-            display: "flex",
-            alignItems: "stretch",
-            gap: "52px",
-            position: "relative",
-            overflow: "hidden",
-            minHeight: "520px",
-          }}
-        >
-          {/* Vertical Divider */}
-          <div
-            style={{
-              position: "absolute",
-              left: "50%",
-              top: "12%",
-              bottom: "12%",
-              width: "2px",
-              background: "linear-gradient(to bottom, transparent, #a61922, #d13b4a, #a61922, transparent)",
-              boxShadow: "0 0 12px rgba(166, 25, 34, 0.35)",
-              zIndex: 1,
-            }}
-          />
-
-          {/* Left Side - Persian Content */}
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", paddingRight: "28px" }}>
-            {/* Logo */}
-            <div
-              style={{
-                width: "88px",
-                height: "88px",
-                borderRadius: "24px",
-                background: "linear-gradient(135deg, #a61922, #e04a55)",
-                color: "#fff",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "42px",
-                fontWeight: "800",
-                marginBottom: "42px",
-                boxShadow: "0 25px 50px rgba(166, 25, 34, 0.38)",
-                animation: "logoFloat 6s ease-in-out infinite",
-              }}
-            >
-              هـ
+        <section className="glass-panel" aria-label="Landing page">
+          <div className="left-group">
+            <div className="logo-wrap" aria-label="Brand logo">
+              <img src="/logow.png" alt="Social and Solidarity Economy logo" />
             </div>
 
-            {/* Persian Title - Split & Styled */}
-            <div style={{ marginBottom: "28px" }}>
-              <h1
-                style={{
-                  fontFamily: "'Tanha', Vazirmatn, sans-serif",
-                  fontSize: "42px",
-                  lineHeight: "1.02",
-                  fontWeight: "900",
-                  color: "#1a1616",
-                  letterSpacing: "-1.9px",
-                  marginBottom: "4px",
-                }}
-              >
-                دانشنامه
+            <div className="title-block">
+              <h1>
+                Social and Solidarity
+                <span>Economy</span>
               </h1>
-              <h2
-                style={{
-                  fontFamily: "'Tanha', Vazirmatn, sans-serif",
-                  fontSize: "32px",
-                  lineHeight: "1.1",
-                  fontWeight: "800",
-                  color: "#9c1e2e",
-                  letterSpacing: "-1.4px",
-                }}
-              >
-                اقتصاد اجتماعی و همبستگی
-              </h2>
-            </div>
-
-            {/* Subtitle */}
-            <p
-              style={{
-                fontSize: "15.8px",
-                color: "#5f5f5f",
-                fontWeight: "600",
-                letterSpacing: "0.5px",
-                marginBottom: "32px",
-              }}
-            >
-              تدوین‌شده توسط سازمان ملل متحد
-            </p>
-
-            {/* Description */}
-            <p
-              style={{
-                fontSize: "16.6px",
-                lineHeight: "2.12",
-                color: "#2a2a2a",
-                fontWeight: "400",
-                textAlign: "justify",
-                textJustify: "inter-word",
-              }}
-            >
-              مرجعی <strong>جامع و الهام‌بخش</strong> از مفاهیم کلیدی، نظریه‌ها و تجربیات عملی اقتصاد اجتماعی و همبستگی برای ساختن جامعه‌ای عادلانه‌تر و مشارکتی.
-            </p>
-          </div>
-
-          {/* Right Side - English + Buttons */}
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", paddingLeft: "28px" }}>
-            {/* English Title & Description */}
-            <div style={{ marginBottom: "38px" }}>
-              <h3
-                style={{
-                  fontSize: "21px",
-                  fontWeight: "700",
-                  color: "#1a1616",
-                  marginBottom: "8px",
-                  textAlign: "left",
-                  letterSpacing: "-0.4px",
-                }}
-              >
-                Social and Solidarity Economy Encyclopedia
-              </h3>
-              <p
-                style={{
-                  fontSize: "15.4px",
-                  lineHeight: "1.85",
-                  color: "#444",
-                  textAlign: "left",
-                  fontWeight: "400",
-                }}
-              >
-                A comprehensive and inspiring reference of key concepts, theories, and practical experiences in the social and solidarity economy for building a more just and participatory society.
-              </p>
-            </div>
-
-            {/* Language Buttons - Smaller */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "11px", marginBottom: "auto" }}>
-              <Link
-                href="/fa"
-                style={{
-                  height: "52px",
-                  borderRadius: "16px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "16.5px",
-                  fontWeight: "600",
-                  textDecoration: "none",
-                  background: "linear-gradient(135deg, #a61922, #d13b4a)",
-                  color: "white",
-                  boxShadow: "0 9px 24px rgba(166, 25, 34, 0.32)",
-                  transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.transform = "translateY(-3px)";
-                  e.currentTarget.style.boxShadow = "0 16px 34px rgba(166, 25, 34, 0.42)";
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow = "0 9px 24px rgba(166, 25, 34, 0.32)";
-                }}
-              >
-                فارسی
-              </Link>
-
-              <Link
-                href="/en"
-                style={{
-                  height: "52px",
-                  borderRadius: "16px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "16.5px",
-                  fontWeight: "600",
-                  textDecoration: "none",
-                  border: "1.5px solid #e0d4d0",
-                  background: "rgba(255, 255, 255, 0.98)",
-                  color: "#333",
-                  boxShadow: "0 8px 22px rgba(120, 25, 30, 0.08)",
-                  transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.transform = "translateY(-3px)";
-                  e.currentTarget.style.borderColor = "#c89a92";
-                  e.currentTarget.style.boxShadow = "0 14px 32px rgba(166, 25, 34, 0.18)";
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.borderColor = "#e0d4d0";
-                  e.currentTarget.style.boxShadow = "0 8px 22px rgba(120, 25, 30, 0.08)";
-                }}
-              >
-                English
-              </Link>
-
-              <Link
-                href="/fa/profile"
-                style={{
-                  height: "52px",
-                  borderRadius: "16px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "16.2px",
-                  fontWeight: "600",
-                  textDecoration: "none",
-                  background: "linear-gradient(135deg, #1f1f1f, #383838)",
-                  color: "#fff",
-                  boxShadow: "0 9px 24px rgba(30, 30, 30, 0.25)",
-                  transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
-                  marginTop: "6px",
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.transform = "translateY(-3px)";
-                  e.currentTarget.style.boxShadow = "0 16px 34px rgba(30, 30, 30, 0.35)";
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow = "0 9px 24px rgba(30, 30, 30, 0.25)";
-                }}
-              >
-                ورود به حاشیه نگار
-              </Link>
-            </div>
-
-            <div
-              style={{
-                marginTop: "auto",
-                fontSize: "13.4px",
-                color: "#666",
-                textAlign: "center",
-                lineHeight: "1.75",
-              }}
-            >
-              ترجمه فارسی توسط پژوهشگران ایرانی<br />
-              <a href="#" style={{ color: "#a61922", textDecoration: "none", fontWeight: "500" }}>
-                درباره پروژه
-              </a>{" "}
-              •{" "}
-              <a href="#" style={{ color: "#a61922", textDecoration: "none", fontWeight: "500" }}>
-                همکاری با ما
-              </a>
+              <div className="subtitle">Knowledge platform</div>
             </div>
           </div>
+
+          <div className="divider" aria-hidden="true" />
+
+          <div className="actions" aria-label="Language selection">
+            <Link href="/fa" className="lang-btn lang-btn-fa" dir="rtl">
+              <span className="lang-text">فارسی</span>
+              <span className="arrow" aria-hidden="true">→</span>
+            </Link>
+            <Link href="/en" className="lang-btn lang-btn-en" dir="ltr">
+              <span className="lang-text">English</span>
+              <span className="arrow" aria-hidden="true">→</span>
+            </Link>
+          </div>
+        </section>
+
+        <div className="bottom-tag">KNOWLEDGE BUILDS<br />A MORE JUST ECONOMY</div>
+        <div className="bottom-right" aria-hidden="true">
+          <div className="ring ring-outer" />
+          <div className="ring ring-inner" />
         </div>
       </main>
 
-      {/* Animation Keyframes */}
       <style jsx>{`
-        @keyframes logoFloat {
-          0%, 100% { transform: translateY(0) scale(1); }
-          50% { transform: translateY(-7px) scale(1.035); }
+        .landing-page {
+          position: relative;
+          min-height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 64px 48px 52px;
+          background:
+            linear-gradient(180deg, rgba(4, 17, 25, 0.1), rgba(4, 17, 25, 0.28)),
+            url('/bg.png') center center / cover no-repeat;
+          overflow: hidden;
+        }
+
+        .landing-page::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background:
+            radial-gradient(circle at 50% 18%, rgba(255, 242, 170, 0.85), rgba(255, 242, 170, 0.18) 16%, rgba(255, 242, 170, 0) 30%),
+            linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.16));
+          pointer-events: none;
+        }
+
+        .landing-page::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(90deg, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0) 18%, rgba(0,0,0,0) 82%, rgba(0,0,0,0.12) 100%);
+          pointer-events: none;
+        }
+
+        .top-right-tag,
+        .vertical-tag,
+        .bottom-tag {
+          position: absolute;
+          z-index: 2;
+          color: rgba(255,255,255,0.82);
+          text-transform: uppercase;
+          letter-spacing: 0.16em;
+        }
+
+        .top-right-tag {
+          top: 28px;
+          right: 52px;
+          font-size: 12px;
+          font-weight: 500;
+          white-space: nowrap;
+        }
+
+        .vertical-tag {
+          left: 18px;
+          top: 50%;
+          transform: translateY(-50%) rotate(-90deg);
+          transform-origin: center;
+          font-size: 10px;
+          letter-spacing: 0.38em;
+          white-space: nowrap;
+          opacity: 0.9;
+        }
+
+        .glass-panel {
+          position: relative;
+          z-index: 3;
+          width: min(1040px, 58vw);
+          min-height: 285px;
+          display: grid;
+          grid-template-columns: 2.1fr 0.12fr 0.7fr;
+          align-items: center;
+          gap: 18px;
+          padding: 24px 34px 22px 28px;
+          border-radius: 34px;
+          border: 1.3px solid rgba(255,255,255,0.78);
+          background: rgba(128, 145, 156, 0.2);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+        }
+
+        .left-group {
+          display: flex;
+          align-items: center;
+          justify-content: flex-start;
+          gap: 18px;
+          min-height: 210px;
+          padding: 6px 0 4px;
+        }
+
+        .logo-wrap {
+          width: 102px;
+          height: 102px;
+          flex-shrink: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-left: 12px;
+        }
+
+        .logo-wrap img {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+          filter: drop-shadow(0 0 12px rgba(255,255,255,0.15));
+        }
+
+        .title-block {
+          color: rgba(255,255,255,0.96);
+          text-align: left;
+          min-width: 0;
+        }
+
+        .title-block h1 {
+          margin: 0;
+          font-size: clamp(2.9rem, 2.8vw, 4.2rem);
+          line-height: 0.9;
+          letter-spacing: -0.08em;
+          font-weight: 700;
+          color: rgba(255,255,255,0.96);
+        }
+
+        .title-block h1 span {
+          display: block;
+        }
+
+        .subtitle {
+          margin-top: 18px;
+          font-size: clamp(1.7rem, 1.5vw, 2.4rem);
+          line-height: 1.2;
+          letter-spacing: -0.05em;
+          color: rgba(255,255,255,0.78);
+          font-weight: 400;
+        }
+
+        .divider {
+          width: 1px;
+          height: 76%;
+          background: rgba(255,255,255,0.54);
+          margin: 0 auto;
+        }
+
+        .actions {
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          gap: 12px;
+          min-height: 180px;
+          padding-left: 8px;
+        }
+
+        .lang-btn {
+          width: min(214px, 100%);
+          min-height: 52px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          padding: 0 18px 0 22px;
+          border-radius: 999px;
+          border: 1px solid rgba(255,255,255,0.72);
+          background: rgba(255,255,255,0.05);
+          color: rgba(255,255,255,0.96);
+          text-decoration: none;
+          transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+          box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02);
+        }
+
+        .lang-btn:hover {
+          transform: translateY(-1px);
+          background: rgba(255,255,255,0.09);
+          border-color: rgba(255,255,255,0.9);
+        }
+
+        .lang-btn-fa {
+          direction: rtl;
+          font-family: "Vazirmatn", Tahoma, sans-serif;
+        }
+
+        .lang-btn-en {
+          direction: ltr;
+          font-family: "Vazirmatn", Tahoma, sans-serif;
+        }
+
+        .lang-text {
+          font-size: 17px;
+          font-weight: 500;
+          line-height: 1;
+          letter-spacing: 0.01em;
+        }
+
+        .arrow {
+          font-size: 30px;
+          line-height: 1;
+          opacity: 0.92;
+          font-weight: 300;
+        }
+
+        .bottom-tag {
+          left: 42px;
+          bottom: 28px;
+          font-size: 10px;
+          line-height: 1.7;
+          letter-spacing: 0.3em;
+          font-weight: 500;
+          color: rgba(255,255,255,0.78);
+        }
+
+        .bottom-right {
+          position: absolute;
+          right: 40px;
+          bottom: 22px;
+          z-index: 2;
+          width: 90px;
+          height: 38px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 16px;
+        }
+
+        .ring {
+          width: 30px;
+          height: 30px;
+          border-radius: 999px;
+          border: 1.5px solid rgba(255,255,255,0.8);
+          background: rgba(255,255,255,0.02);
+        }
+
+        .ring-inner {
+          width: 18px;
+          height: 18px;
+          border-width: 1.2px;
+        }
+
+        @media (max-width: 1280px) {
+          .glass-panel {
+            width: min(980px, 62vw);
+          }
+        }
+
+        @media (max-width: 980px) {
+          .landing-page {
+            padding: 120px 18px 52px;
+          }
+
+          .top-right-tag {
+            top: 18px;
+            right: 18px;
+            font-size: 9px;
+            letter-spacing: 0.12em;
+          }
+
+          .vertical-tag {
+            display: none;
+          }
+
+          .glass-panel {
+            width: min(760px, 92vw);
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            padding: 28px 18px 20px;
+            border-radius: 26px;
+          }
+
+          .left-group {
+            flex-direction: column;
+            text-align: center;
+            width: 100%;
+            min-height: unset;
+            gap: 10px;
+          }
+
+          .logo-wrap {
+            margin-left: 0;
+            width: 94px;
+            height: 94px;
+          }
+
+          .title-block {
+            text-align: center;
+          }
+
+          .title-block h1 {
+            font-size: clamp(2.4rem, 8vw, 3.2rem);
+          }
+
+          .subtitle {
+            font-size: clamp(1.4rem, 5vw, 1.9rem);
+          }
+
+          .divider {
+            width: 100%;
+            height: 1px;
+            margin: 0;
+          }
+
+          .actions {
+            width: 100%;
+            padding-left: 0;
+            min-height: unset;
+          }
+
+          .lang-btn {
+            width: min(260px, 86%);
+          }
+
+          .bottom-tag {
+            left: 18px;
+            bottom: 18px;
+            font-size: 8px;
+            letter-spacing: 0.2em;
+          }
+
+          .bottom-right {
+            right: 18px;
+            bottom: 12px;
+            transform: scale(0.84);
+          }
         }
       `}</style>
     </>
   );
 }
+
+

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { KeyboardEvent } from "react";
 import Link from "next/link";
 import { geoCentroid } from "d3-geo";
+import { Minus, Plus, RotateCcw } from "lucide-react";
 import { ComposableMap, Geography, Geographies, Marker, ZoomableGroup } from "react-simple-maps";
 
 type Country = {
@@ -12,6 +13,7 @@ type Country = {
   rsmKey?: string;
   properties?: {
     ADMIN?: string;
+    NAME_FA?: string;
     ISO_A3?: string;
   };
 };
@@ -26,6 +28,13 @@ type CountryProfile = {
 
 const mapFile = "/maps/world-countries.geojson";
 const defaultCountry: Country = { id: "USA", name: "United States of America" };
+
+function getCountryDisplayName(country?: Country | null, locale: "en" | "fa" = "en"): string {
+  const englishName = country?.properties?.ADMIN || country?.name || "";
+  if (locale === "fa") return country?.properties?.NAME_FA || englishName;
+  return englishName;
+}
+
 export const fallbackProfiles: CountryProfile[] = [
   { id: "CAN", name: "Canada", summary: "Canada offers a useful starting point for thinking about social and solidarity economy in practice.", article: "Cooperatives, community organizations, mutual-aid initiatives, Indigenous economic traditions, and local social enterprises all contribute to a broader understanding of how communities organize resources and care beyond the boundaries of the conventional market." },
   { id: "USA", name: "United States of America", summary: "Community wealth building, worker ownership, and mutual aid shape a diverse SSE landscape across the United States.", article: "Worker cooperatives, community development finance, and neighborhood organizations show how local ownership can keep value circulating where people live and work." },
@@ -110,15 +119,42 @@ export default function CountryExplorer({ locale = "en" }: { locale?: "en" | "fa
   }, [isPersian]);
 
   const countryId = selectedCountry.properties?.ISO_A3 || selectedCountry.id;
-  const rawCountryName = selectedCountry.properties?.ADMIN || selectedCountry.name;
-  const profile = profiles.find((item) => item.id === countryId) || profiles.find((item) => item.name === rawCountryName);
+  const rawCountryName = getCountryDisplayName(selectedCountry, isPersian ? "fa" : "en");
+  const profile = profiles.find((item) => item.id === countryId) || profiles.find((item) => item.name === rawCountryName)
+    || profiles.find((item) => item.name === (selectedCountry.properties?.ADMIN || selectedCountry.name));
   const countryName = profile?.name || rawCountryName;
   const [searchQuery, setSearchQuery] = useState("");
   const filteredCountries = countries
-    .filter((country) => (country.properties?.ADMIN || country.name).toLowerCase().includes(searchQuery.toLowerCase()))
+    .filter((country) => {
+      const englishName = country.properties?.ADMIN || country.name;
+      const displayName = getCountryDisplayName(country, isPersian ? "fa" : "en");
+      return englishName.toLowerCase().includes(searchQuery.toLowerCase())
+        || displayName.toLowerCase().includes(searchQuery.toLowerCase());
+    })
     .slice(0, 8);
   const featuredProfiles = isPersian ? profiles.filter((profile) => profile.id).slice(0, 6) : profiles.filter((profile) => profile.id).slice(0, 15);
   const railProfiles = [...featuredProfiles, ...featuredProfiles];
+  const visibleLabelCountries = countries
+    .map((country) => {
+      const label = getCountryDisplayName(country, isPersian ? "fa" : "en");
+      const coordinates = getCountryLabelPosition(country);
+      const isSelected = selectedCountry.properties?.ISO_A3 === country.properties?.ISO_A3
+        || selectedCountry.rsmKey === country.rsmKey;
+      const hasContent = profiles.some((profileItem) => profileItem.id === country.properties?.ISO_A3);
+      return { country, label, coordinates, isSelected, hasContent, priority: isSelected ? 3 : hasContent ? 2 : 1 };
+    })
+    .sort((a, b) => b.priority - a.priority)
+    .filter((entry, index, items) => {
+      const { coordinates } = entry;
+      const isVisible = !items.some((other, otherIndex) => {
+        if (otherIndex === index) return false;
+        if (other.priority < entry.priority) return false;
+        const dx = other.coordinates[0] - coordinates[0];
+        const dy = other.coordinates[1] - coordinates[1];
+        return Math.sqrt(dx * dx + dy * dy) < 4.5;
+      });
+      return isVisible;
+    });
 
   function selectProfile(profileId: string) {
     const country = countries.find((item) => item.properties?.ISO_A3 === profileId || item.id === profileId);
@@ -212,6 +248,7 @@ export default function CountryExplorer({ locale = "en" }: { locale?: "en" | "fa
         .map-card { grid-area: map; position: relative; min-width: 0; padding: 0; }
         .map-heading { position: absolute; z-index: 2; top: 28px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; justify-content: space-between; gap: 12px; width: min(430px, 42vw); padding: 10px 14px; border: 1px solid rgba(210, 231, 220, .4); border-radius: 5px; background: rgba(11, 74, 68, .54); color: #f3f9ef; box-shadow: 0 12px 28px rgba(2, 35, 32, .18); backdrop-filter: blur(16px); }
         .map-heading h2 { margin: 0; font-size: 16px; }
+        .explorer-page[dir="rtl"] .map-heading { direction: rtl; }
         .map-heading span { color: rgba(243, 249, 239, .68); font-size: 11px; }
         .map-wrap { position: relative; overflow: hidden; min-height: 680px; height: min(720px, calc(100vh - 220px)); background: radial-gradient(circle at 50% 50%, #0c6960 0%, var(--green-deep) 70%); border: 0; border-radius: 20px; box-shadow: inset 0 0 0 1px rgba(169, 200, 187, .22), 0 18px 44px rgba(4, 60, 56, .2); }
         .map-wrap::before { content: "ATLAS / 01"; position: absolute; z-index: 1; top: 28px; left: 30px; color: rgba(210, 231, 220, .68); font: 10px/1 "DM Sans", sans-serif; letter-spacing: 2px; }
@@ -230,21 +267,19 @@ export default function CountryExplorer({ locale = "en" }: { locale?: "en" | "fa
         .map-footer { position: absolute; z-index: 2; bottom: 154px; left: 30px; display: flex; align-items: center; gap: 8px; color: rgba(243, 249, 239, .84); font-size: 11px; }
         .explorer-page[dir="rtl"] .map-footer { left: auto; right: 30px; }
         .legend-dot { width: 9px; height: 9px; border-radius: 50%; background: #e0d08a; }
-        .map-legend { position: absolute; z-index: 2; bottom: 150px; right: 28px; display: flex; gap: 14px; padding: 9px 12px; border: 1px solid rgba(210, 231, 220, .3); border-radius: 4px; background: rgba(4, 60, 56, .72); color: rgba(243, 249, 239, .84); font-size: 11px; }
-        .explorer-page[dir="rtl"] .map-legend { right: auto; left: 28px; }
-        .legend-item { display: inline-flex; align-items: center; gap: 6px; }
-        .legend-swatch { width: 10px; height: 10px; border: 1px solid rgba(255,255,255,.4); border-radius: 2px; background: #789d91; }
-        .legend-swatch.has-content { border-color: #d3d99d; background: #b0c9a6; }
         .zoom-controls { position: absolute; z-index: 2; bottom: 205px; left: 28px; display: flex; gap: 5px; }
         .explorer-page[dir="rtl"] .zoom-controls { left: auto; right: 28px; }
-        .zoom-controls button { width: 34px; height: 34px; border: 1px solid rgba(210, 231, 220, .32); border-radius: 4px; color: var(--green-deep); background: rgba(247, 247, 241, .92); cursor: pointer; font-size: 18px; }
+        .zoom-controls button { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid rgba(210, 231, 220, .32); border-radius: 4px; color: var(--green-deep); background: rgba(247, 247, 241, .92); cursor: pointer; font-size: 18px; }
+        .zoom-controls button svg { display: block; }
         .zoom-controls button:hover { color: var(--green); background: #fff5c9; }
 
         .country-sidebar { position: absolute; z-index: 4; top: 28px; right: 28px; display: flex; flex-direction: column; gap: 12px; width: min(320px, 29%); min-width: 270px; }
-        .explorer-page[dir="rtl"] .country-sidebar { right: auto; left: 28px; }
+        .explorer-page[dir="rtl"] .country-sidebar { right: 28px; left: auto; }
         .search-panel { padding: 16px; border: 1px solid rgba(235, 246, 239, .32); border-radius: 12px; background: rgba(246, 250, 242, .16); color: #f3f9ef; box-shadow: 0 14px 35px rgba(2, 35, 32, .18); backdrop-filter: blur(18px); }
+        .explorer-page[dir="rtl"] .search-panel { direction: rtl; text-align: right; }
         .search-panel label { display: block; margin-bottom: 9px; color: #d9e8ba; font-size: 10px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; }
-        .country-search { width: 100%; height: 44px; box-sizing: border-box; border: 1px solid rgba(255, 255, 255, .28); border-radius: 7px; padding: 0 13px; color: var(--ink); background: rgba(255, 255, 255, .86); font: inherit; outline: none; }
+        .country-search { width: 100%; height: 44px; box-sizing: border-box; border: 1px solid rgba(255, 255, 255, .28); border-radius: 7px; padding: 0 13px; color: var(--ink); background: rgba(255, 255, 255, .86); font: inherit; outline: none; text-align: inherit; }
+        .explorer-page[dir="rtl"] .country-search { direction: rtl; text-align: right; }
         .country-search:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(7, 92, 85, .1); }
         .search-results { display: grid; gap: 4px; margin-top: 10px; max-height: 220px; overflow-y: auto; }
         .country-option { border: 0; border-radius: 8px; padding: 9px 10px; color: var(--ink); background: rgba(255,255,255,.82); cursor: pointer; font: inherit; text-align: ${isPersian ? "right" : "left"}; }
@@ -252,48 +287,74 @@ export default function CountryExplorer({ locale = "en" }: { locale?: "en" | "fa
         .search-empty { margin: 10px 0 0; color: #e8f0df; font-size: 12px; }
 
         .country-panel { display: flex; flex-direction: column; max-height: 380px; overflow-y: auto; border: 1px solid rgba(235, 246, 239, .32); border-radius: 12px; background: rgba(246, 250, 242, .88); color: var(--ink); box-shadow: 0 18px 42px rgba(2, 35, 32, .24); backdrop-filter: blur(18px); }
+        .explorer-page[dir="rtl"] .country-panel { direction: rtl; text-align: right; }
         .panel-top { padding: 22px 21px 18px; color: white; background: rgba(7, 92, 85, .88); }
         .panel-top small { opacity: .72; font-size: 10px; font-weight: 800; letter-spacing: 1.8px; text-transform: uppercase; }
         .panel-top h2 { margin: 10px 0 0; font-family: Georgia, serif; font-size: 28px; line-height: 1.1; }
-        .explorer-page[dir="rtl"] .panel-top h2 { font-family: "Vazirmatn", Tahoma, sans-serif; }
-        .panel-body { padding: 23px; }
-        .panel-body p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.85; }
+        .explorer-page[dir="rtl"] .panel-top h2 { font-family: "Vazirmatn", Tahoma, sans-serif; text-align: right; }
+        .panel-body { padding: 23px; font-family: "Vazirmatn", Tahoma, Arial, sans-serif; }
+        .panel-body p { margin: 0; color: var(--muted); font-family: "Vazirmatn", Tahoma, Arial, sans-serif; font-size: 15px; line-height: 1.95; }
+        .explorer-page[dir="rtl"] .panel-body { direction: rtl; text-align: right; }
+        .explorer-page[dir="rtl"] .panel-body p { text-align: justify; }
         .panel-label { display: block; margin-bottom: 8px; color: var(--green); font-size: 10px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; }
-        .article { margin-top: 25px; padding-top: 23px; border-top: 1px solid var(--border); }
+        .article { margin-top: 25px; padding-top: 23px; border-top: 1px solid var(--border); font-family: "Vazirmatn", Tahoma, Arial, sans-serif; }
         .article h3 { margin: 0 0 11px; color: #241d1c; font-size: 18px; unicode-bidi: plaintext; }
-        .article p { white-space: pre-line; direction: ${isPersian ? "rtl" : "ltr"}; text-align: ${isPersian ? "right" : "left"}; }
+        .article p { white-space: pre-line; direction: ${isPersian ? "rtl" : "ltr"}; text-align: ${isPersian ? "justify" : "left"}; font-family: "Vazirmatn", Tahoma, Arial, sans-serif; font-size: 15px; line-height: 1.9; }
         .read-more { display: inline-block; margin-top: 16px; color: var(--green); font-size: 13px; font-weight: 800; text-decoration: none; }
         .panel-note { margin-top: 24px !important; padding-top: 17px; border-top: 1px solid var(--border); font-size: 12px !important; }
 
         .country-rail { position: absolute; z-index: 4; right: 28px; bottom: 22px; left: 28px; overflow: hidden; padding: 2px 0 6px; }
         .country-rail-track { display: flex; gap: 12px; width: max-content; animation: atlas-drift 28s linear infinite; }
+        .explorer-page[dir="rtl"] .country-rail-track { animation-name: atlas-drift-rtl; direction: rtl; }
         .country-rail:hover .country-rail-track, .country-rail:focus-within .country-rail-track { animation-play-state: paused; }
-        .country-card { display: flex; flex-direction: column; justify-content: space-between; width: 190px; min-height: 104px; padding: 14px; border: 1px solid rgba(235, 246, 239, .3); border-radius: 12px; color: #f3f9ef; background: rgba(246, 250, 242, .16); box-shadow: 0 12px 30px rgba(2, 35, 32, .18); backdrop-filter: blur(16px); cursor: pointer; text-align: ${isPersian ? "right" : "left"}; transition: transform .2s ease, background .2s ease; }
+        .country-card { display: flex; flex-direction: column; justify-content: space-between; width: 190px; min-height: 104px; padding: 14px; border: 1px solid rgba(235, 246, 239, .3); border-radius: 12px; color: #f3f9ef; background: rgba(246, 250, 242, .16); box-shadow: 0 12px 30px rgba(2, 35, 32, .18); backdrop-filter: blur(16px); cursor: pointer; font-family: "Vazirmatn", Tahoma, Arial, sans-serif; text-align: ${isPersian ? "right" : "left"}; transition: transform .2s ease, background .2s ease; }
+        .explorer-page[dir="rtl"] .country-card { text-align: right; }
         .country-card:hover, .country-card.selected { transform: translateY(-5px); background: rgba(221, 235, 190, .3); }
         .country-card small { color: #d9e8ba; font-size: 9px; letter-spacing: 1px; text-transform: uppercase; }
         .country-card strong { margin-top: 8px; font-size: 15px; }
-        .country-card span { color: rgba(243, 249, 239, .72); font-size: 10px; line-height: 1.45; }
-        @keyframes atlas-drift { from { transform: translateX(0); } to { transform: translateX(-${Math.max(0, featuredProfiles.length - 3) * 202}px); } }
+        .country-card span { color: rgba(243, 249, 239, .72); font-size: 11px; line-height: 1.6; }
+        @keyframes atlas-drift { from { transform: translateX(-${Math.max(0, featuredProfiles.length - 3) * 202}px); } to { transform: translateX(0); } }
+        @keyframes atlas-drift-rtl { from { transform: translateX(0); } to { transform: translateX(-${Math.max(0, featuredProfiles.length - 3) * 202}px); } }
 
         .locale-en { height: 100dvh; min-height: 100dvh; overflow: hidden; padding-bottom: 0; }
-        .locale-en .shell { height: 100dvh; min-height: 0; border: 0; border-radius: 0; box-shadow: none; }
+        .explorer-page.locale-en { padding: 0; }
+        .locale-en .shell { width: 100vw; max-width: none; height: 100dvh; min-height: 0; margin: 0; border: 0; border-radius: 0; box-shadow: none; background: transparent; }
         .locale-en .topbar, .locale-en .intro, .locale-en .map-heading { display: none; }
         .locale-en .map-wrap::before, .locale-en .map-wrap::after { display: none; }
         .locale-en .content { height: 100dvh; min-height: 0; padding: 0; }
         .locale-en .map-wrap { min-height: 0; height: 100dvh; border-radius: 0; box-shadow: none; }
         .locale-en .map-wrap svg { min-height: 0; }
         .locale-en .country-rail-track { animation-name: atlas-drift-en; animation-duration: 96s; }
-        .locale-en .country-rail { right: 24px; bottom: 24px; left: 24px; }
-        .locale-en .country-sidebar { top: 24px; right: 24px; }
+        .locale-en .country-rail { right: 24px; bottom: 18px; left: 24px; z-index: 3; }
+        .locale-en .country-sidebar { top: 24px; right: auto; left: 24px; }
         .locale-en .country-panel { border-color: rgba(235, 246, 239, .32); background: rgba(246, 250, 242, .16); color: #f3f9ef; box-shadow: 0 14px 35px rgba(2, 35, 32, .2); backdrop-filter: blur(18px); }
         .locale-en .panel-top { background: rgba(7, 92, 85, .42); }
         .locale-en .panel-body p, .locale-en .article h3 { color: rgba(243, 249, 239, .86); }
         .locale-en .panel-label { color: #d9e8ba; }
         .locale-en .article, .locale-en .panel-note { border-color: rgba(235, 246, 239, .24); }
         .locale-en .read-more { color: #e4d493; }
-        .locale-en .zoom-controls { bottom: 172px; }
-        .locale-en .map-footer, .locale-en .map-legend { bottom: 124px; }
-        @keyframes atlas-drift-en { from { transform: translateX(0); } to { transform: translateX(-${featuredProfiles.length * 202}px); } }
+        .locale-en .zoom-controls { bottom: 172px; z-index: 5; }
+        .locale-en .map-footer { bottom: 124px; left: 24px; z-index: 1; }
+
+        .explorer-page[dir="rtl"] { height: 100dvh; min-height: 100dvh; overflow: hidden; padding-bottom: 0; }
+        .explorer-page[dir="rtl"] .shell { width: 100vw; max-width: none; height: 100dvh; min-height: 0; margin: 0; border: 0; border-radius: 0; box-shadow: none; background: transparent; }
+        .explorer-page[dir="rtl"] .topbar, .explorer-page[dir="rtl"] .intro, .explorer-page[dir="rtl"] .map-heading { display: none; }
+        .explorer-page[dir="rtl"] .map-wrap::before, .explorer-page[dir="rtl"] .map-wrap::after { display: none; }
+        .explorer-page[dir="rtl"] .content { height: 100dvh; min-height: 0; padding: 0; }
+        .explorer-page[dir="rtl"] .map-wrap { min-height: 0; height: 100dvh; border-radius: 0; box-shadow: none; }
+        .explorer-page[dir="rtl"] .map-wrap svg { min-height: 0; }
+        .explorer-page[dir="rtl"] .country-rail-track { animation-name: atlas-drift-rtl; animation-duration: 96s; }
+        .explorer-page[dir="rtl"] .country-rail { right: 24px; bottom: 18px; left: 24px; z-index: 3; }
+        .explorer-page[dir="rtl"] .country-sidebar { top: 24px; right: 24px; left: auto; }
+        .explorer-page[dir="rtl"] .country-panel { border-color: rgba(235, 246, 239, .32); background: rgba(246, 250, 242, .16); color: #f3f9ef; box-shadow: 0 14px 35px rgba(2, 35, 32, .2); backdrop-filter: blur(18px); }
+        .explorer-page[dir="rtl"] .panel-top { background: rgba(7, 92, 85, .42); }
+        .explorer-page[dir="rtl"] .panel-body p, .explorer-page[dir="rtl"] .article h3 { color: rgba(243, 249, 239, .86); }
+        .explorer-page[dir="rtl"] .panel-label { color: #d9e8ba; }
+        .explorer-page[dir="rtl"] .article, .explorer-page[dir="rtl"] .panel-note { border-color: rgba(235, 246, 239, .24); }
+        .explorer-page[dir="rtl"] .read-more { color: #e4d493; }
+        .explorer-page[dir="rtl"] .zoom-controls { bottom: 172px; z-index: 5; }
+        .explorer-page[dir="rtl"] .map-footer { bottom: 124px; right: 24px; left: auto; z-index: 1; }
+        @keyframes atlas-drift-en { from { transform: translateX(-${featuredProfiles.length * 202}px); } to { transform: translateX(0); } }
 
         @media (max-width: 820px) {
           .topbar { padding: 20px 24px; }
@@ -344,7 +405,7 @@ export default function CountryExplorer({ locale = "en" }: { locale?: "en" | "fa
             <section className="map-card" aria-label="Interactive world map">
               <div className="map-wrap">
                 <div className="map-heading">
-                  <h2>{isPersian ? "اطلس اقتصاد اجتماعی" : "Social economy atlas"}</h2>
+                  <h2>{isPersian ? "اطلس اقتصاد اجتماعی و همبستگی" : "SSE Atlas"}</h2>
                   <span>{isPersian ? "نمای جهانی" : "A global view"}</span>
                 </div>
                 {mapError ? (
@@ -400,27 +461,22 @@ export default function CountryExplorer({ locale = "en" }: { locale?: "en" | "fa
                         );
                         })}
                       </Geographies>
-                      {(isPersian || zoom >= 2.2) && countries.map((country, index) => (
+                      {zoom >= 2.2 && visibleLabelCountries.map(({ country, label, coordinates }, index) => (
                         <Marker
                           key={`label-${country.rsmKey || country.properties?.ISO_A3 || country.name}-${index}`}
-                          coordinates={getCountryLabelPosition(country)}
+                          coordinates={coordinates}
                         >
-                          <text className="country-label" y="1.5">{country.properties?.ADMIN || country.name}</text>
+                          <text className="country-label" y="1.5">{label}</text>
                         </Marker>
                       ))}
                     </ZoomableGroup>
                   </ComposableMap>
                 )}
               </div>
-              <div className="map-footer"><span className="legend-dot" /> {isPersian ? "کشور انتخاب‌شده:" : "Selected country:"} {countryName}</div>
               <div className="zoom-controls" aria-label={isPersian ? "کنترل بزرگ‌نمایی نقشه" : "Map zoom controls"}>
-                <button type="button" aria-label={isPersian ? "بزرگ‌نمایی" : "Zoom in"} onClick={() => setZoom((currentZoom) => Math.min(currentZoom + 1, 8))}>+</button>
-                <button type="button" aria-label={isPersian ? "کوچک‌نمایی" : "Zoom out"} onClick={() => setZoom((currentZoom) => Math.max(currentZoom - 1, 1))}>−</button>
-                <button type="button" aria-label={isPersian ? "بازنشانی نقشه" : "Reset map zoom"} onClick={() => setZoom(1)}>{isPersian ? "بازنشانی" : "Reset"}</button>
-              </div>
-              <div className="map-legend" aria-label={isPersian ? "راهنمای نقشه" : "Map legend"}>
-                <span className="legend-item"><span className="legend-swatch has-content" /> {isPersian ? "مقاله موجود است" : "Articles available"}</span>
-                <span className="legend-item"><span className="legend-swatch" /> {isPersian ? "هنوز مقاله‌ای نیست" : "No article yet"}</span>
+                <button type="button" aria-label={isPersian ? "بزرگ‌نمایی" : "Zoom in"} onClick={() => setZoom((currentZoom) => Math.min(currentZoom + 1, 8))}><Plus size={14} strokeWidth={2.5} /></button>
+                <button type="button" aria-label={isPersian ? "کوچک‌نمایی" : "Zoom out"} onClick={() => setZoom((currentZoom) => Math.max(currentZoom - 1, 1))}><Minus size={14} strokeWidth={2.5} /></button>
+                <button type="button" aria-label={isPersian ? "بازنشانی نقشه" : "Reset map zoom"} onClick={() => setZoom(1)}><RotateCcw size={14} strokeWidth={2.5} /></button>
               </div>
               <div className="country-rail" aria-label={isPersian ? "کشورهای پیشنهادی" : "Suggested countries"}>
                 <div className="country-rail-track">
@@ -431,7 +487,6 @@ export default function CountryExplorer({ locale = "en" }: { locale?: "en" | "fa
                       type="button"
                       onClick={() => selectProfile(featuredProfile.id)}
                     >
-                      <small>{isPersian ? "پروفایل کشور" : "Country profile"}</small>
                       <strong>{featuredProfile.name}</strong>
                       <span>{featuredProfile.summary}</span>
                     </button>
@@ -454,7 +509,7 @@ export default function CountryExplorer({ locale = "en" }: { locale?: "en" | "fa
                 {searchQuery && filteredCountries.length > 0 ? (
                   <div className="search-results" role="listbox" aria-label={isPersian ? "نتایج جستجوی کشور" : "Country search results"}>
                     {filteredCountries.map((country) => {
-                      const name = country.properties?.ADMIN || country.name;
+                      const name = getCountryDisplayName(country, isPersian ? "fa" : "en");
                       const isSelected = countryName === name;
 
                       return (
