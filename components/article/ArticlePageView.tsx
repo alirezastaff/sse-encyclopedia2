@@ -1,19 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { type ElementType, useEffect, useMemo, useState } from "react";
-import { useSession } from "next-auth/react";
+import { ArrowDown, MoonStar, Share2, SunMedium, X } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
 import { type ArticleLocale, getLocalizedArticle } from "@/lib/articles";
 
 type ArticlePageViewProps = {
   locale: ArticleLocale;
   slug: string;
-};
-
-type Section = {
-  id: string;
-  kind: "heading" | "paragraph";
-  text: string;
 };
 
 function classifySection(text: string): "heading" | "paragraph" {
@@ -181,406 +175,311 @@ function buildNotesDocxBlob(text: string) {
 }
 
 export default function ArticlePageView({ locale, slug }: ArticlePageViewProps) {
-  const { status, data: session } = useSession();
   const article = getLocalizedArticle(slug, locale);
   const isPersian = locale === "fa";
-  const storageKey = `article-notes-${locale}-${slug}`;
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    if (typeof window === "undefined") {
-      return false;
-    }
-    try {
-      return window.localStorage.getItem("app-dark-mode") === "true";
-    } catch {
-      return false;
-    }
-  });
-  const [isNotesEnabled, setIsNotesEnabled] = useState(() => {
-    if (typeof window === "undefined") {
-      return true;
-    }
-    try {
-      return window.localStorage.getItem(`${storageKey}-enabled`) !== "false";
-    } catch {
-      return true;
-    }
-  });
-  const [notesText, setNotesText] = useState(() => {
-    if (typeof window === "undefined") {
-      return "";
-    }
+  const articleRef = useRef<HTMLDivElement | null>(null);
+  const [isDarkMode, setIsDarkMode] = useState(true);
 
-    try {
-      return window.localStorage.getItem(storageKey) ?? "";
-    } catch {
-      return "";
-    }
-  });
-  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
-  const [feedbackType, setFeedbackType] = useState<"success" | "error" | null>(null);
-
-  const sections = useMemo<Section[]>(() => {
+  const sections = useMemo(() => {
     if (!article) return [];
+
     return article.body
-      .filter((text, index) => index !== 0 || text.trim() !== article.title.trim())
+      .filter((text) => text.trim().length > 0)
+      .filter((text) => text.trim() !== article.title.trim())
       .map((text, index) => ({
-        id: `section-${index}`,
+        id: `article-section-${index}`,
         kind: classifySection(text),
         text,
       }));
   }, [article]);
 
-  const referenceStartIndex = sections.findIndex(
-    (section) => section.kind === "heading" && /^references$/i.test(section.text.trim())
-  );
-
-  const articleSections = referenceStartIndex === -1 ? sections : sections.slice(0, referenceStartIndex);
-  const referenceSections = referenceStartIndex === -1 ? [] : sections.slice(referenceStartIndex);
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(storageKey, notesText);
-    } catch {
-      // ignore storage failures
-    }
-  }, [notesText, storageKey]);
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(`${storageKey}-enabled`, String(isNotesEnabled));
-    } catch {
-      // ignore storage failures
-    }
-  }, [isNotesEnabled, storageKey]);
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem("app-dark-mode", String(isDarkMode));
-    } catch {
-      // ignore storage failures
-    }
-  }, [isDarkMode]);
-
-  useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add("dark-mode");
-    } else {
-      document.documentElement.classList.remove("dark-mode");
-    }
-  }, [isDarkMode]);
-
-
-  useEffect(() => {
-    if (!feedbackMessage) {
-      return;
-    }
-
-    const timeout = window.setTimeout(() => setFeedbackMessage(null), 3600);
-    return () => window.clearTimeout(timeout);
-  }, [feedbackMessage]);
-
-  const handleTextSelection = () => {
-    // no highlight selection in this simplified note mode
-  };
-
-  const saveNote = async () => {
-    if (!notesText.trim()) {
-      setFeedbackMessage(isPersian ? "ابتدا متنی برای ذخیره وارد کنید." : "Enter some note text first.");
-      setFeedbackType("error");
-      return;
-    }
-    if (status !== "authenticated") {
-      setFeedbackMessage(isPersian ? "برای ذخیره کردن یادداشت باید وارد شوید." : "Sign in to save notes.");
-      setFeedbackType("error");
-      return;
-    }
-
-    const savePayload = { articleSlug: slug, content: notesText };
-    const publicNotePayload = {
-      name: session?.user?.name?.trim() || session?.user?.email || "Anonymous",
-      email: session?.user?.email || undefined,
-      articleSlug: slug,
-      content: notesText,
-    };
-
-    try {
-      const [articleResponse, marginalResponse] = await Promise.all([
-        fetch("/api/article/notes", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(savePayload),
-        }),
-        fetch("/api/marginal-notes", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(publicNotePayload),
-        }),
-      ]);
-
-      if (articleResponse.ok && marginalResponse.ok) {
-        setFeedbackMessage(isPersian ? "یادداشت شما در حاشیه نگار ذخیره شد." : "Your note has been saved to Marginal Notes.");
-        setFeedbackType("success");
-      } else if (articleResponse.ok && !marginalResponse.ok) {
-        setFeedbackMessage(isPersian ? "یادداشت شما ذخیره شد، اما در فید حاشیه نمایش داده نشد." : "Note saved, but it could not be published to Marginal Notes.");
-        setFeedbackType("error");
-      } else if (!articleResponse.ok && marginalResponse.ok) {
-        setFeedbackMessage(isPersian ? "یادداشت در فید حاشیه منتشر شد، اما ذخیره محلی مقاله با خطا مواجه شد." : "Published to Marginal Notes, but article note save failed.");
-        setFeedbackType("error");
-      } else {
-        setFeedbackMessage(isPersian ? "ذخیره یادداشت با خطا مواجه شد." : "Unable to save note.");
-        setFeedbackType("error");
-      }
-    } catch {
-      setFeedbackMessage(isPersian ? "خطا در ارسال یادداشت." : "Note save failed.");
-      setFeedbackType("error");
-    }
-
-    const blob = buildNotesDocxBlob(notesText.trim());
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${slug}-notes.docx`;
-    link.click();
-    URL.revokeObjectURL(url);
-  };
-
   if (!article) {
     return (
       <main style={{ padding: 40, fontFamily: "Vazirmatn, Tahoma, Arial, sans-serif" }}>
-        <h1>{locale === "fa" ? "مقاله یافت نشد" : "Article not found"}</h1>
-        <p>{locale === "fa" ? "این مقاله در پایگاه داده موجود نیست." : "This article is not available yet."}</p>
+        <h1>{isPersian ? "مقاله یافت نشد" : "Article not found"}</h1>
         <Link href={`/${locale}/archive`} style={{ color: "#a61922" }}>
-          {locale === "fa" ? "بازگشت به آرشیو" : "Back to archive"}
+          {isPersian ? "بازگشت به آرشیو" : "Back to archive"}
         </Link>
       </main>
     );
   }
 
-  const oppositeLocale = locale === "en" ? "fa" : "en";
+  const panelTheme = isDarkMode
+    ? {
+        shell: "rgba(19, 24, 29, 0.30)",
+        inner: "rgba(13, 17, 22, 0.42)",
+        section: "rgba(9, 13, 18, 0.10)",
+        border: "rgba(255,255,255,0.12)",
+        text: "#edf3ff",
+        muted: "#a8b6c7",
+        divider: "rgba(255,255,255,0.14)",
+        strong: "#f3f7ff",
+        action: "#4f8fff",
+        button: "rgba(255,255,255,0.06)",
+      }
+    : {
+        shell: "rgba(255, 255, 255, 0.38)",
+        inner: "rgba(255, 255, 255, 0.60)",
+        section: "rgba(255, 255, 255, 0.40)",
+        border: "rgba(40, 55, 70, 0.14)",
+        text: "#24313d",
+        muted: "#607181",
+        divider: "rgba(40, 55, 70, 0.16)",
+        strong: "#17232e",
+        action: "#357bd8",
+        button: "rgba(255,255,255,0.46)",
+      };
 
-
-  const downloadArticle = () => {
-    const articleHtml = articleSections
-      .map((section) => {
-        if (section.kind === "heading") {
-          return `<h2>${escapeHtml(localizeDigits(section.text, locale))}</h2>`;
-        }
-
-        return `<div><p>${escapeHtml(localizeDigits(section.text, locale))}</p></div>`;
-      })
-      .join("");
-
-    const html = `<!DOCTYPE html>
-<html lang="${locale}">
-  <head>
-    <meta charset="utf-8" />
-    <title>${escapeHtml(localizeDigits(article.title, locale))}</title>
-    <style>
-      body { font-family: Tahoma, Arial, sans-serif; line-height: 1.8; color: #222; padding: 32px; background: #f7f1ec; }
-      h1, h2, h3 { color: #221f1f; font-weight: 800; }
-      p { margin: 0 0 1em; }
-      .section { margin-bottom: 24px; padding: 18px; background: #fff; border: 1px solid rgba(0,0,0,0.04); border-radius: 18px; }
-    </style>
-  </head>
-  <body>
-    <h1>${escapeHtml(localizeDigits(article.title, locale))}</h1>
-    <p><strong>${escapeHtml(localizeDigits(article.description, locale))}</strong></p>
-    ${articleHtml}
-  </body>
-</html>`;
-
-    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${slug}.html`;
-    link.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const handleClearNotes = () => {
-    setNotesText("");
-    try {
-      window.localStorage.removeItem(storageKey);
-    } catch {
-      // ignore storage failures
-    }
+  const scrollToReading = () => {
+    articleRef.current?.scrollBy({
+      behavior: "smooth",
+      top: articleRef.current.clientHeight * 0.78,
+    });
   };
 
   return (
     <main
       dir={isPersian ? "rtl" : "ltr"}
-      style={{ padding: 32, maxWidth: 1100, margin: "0 auto", fontFamily: "Vazirmatn, Tahoma, Arial, sans-serif", lineHeight: 1.8, textAlign: isPersian ? "right" : "left", color: isDarkMode ? "#e0e0e0" : "#000", background: isDarkMode ? "#0b0e16" : undefined, minHeight: "100vh", transition: "background-color 0.3s ease, color 0.3s ease" }}
+      style={{
+        height: "100vh",
+        minHeight: 0,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "24px",
+        backgroundImage:
+          "linear-gradient(90deg, rgba(15, 17, 19, 0.34), rgba(15, 17, 19, 0.16)), url('/bg.png')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        fontFamily: "Vazirmatn, Tahoma, Arial, sans-serif",
+        position: "relative",
+      }}
     >
-      <div style={{ marginBottom: 24 }}>
-        <Link href={`/${locale}/archive`} style={{ color: "#a61922", textDecoration: "none", fontWeight: 700 }}>
-          ← {locale === "fa" ? "بازگشت به آرشیو" : "Back to archive"}
-        </Link>
-      </div>
+      <button
+        type="button"
+        onClick={scrollToReading}
+        aria-label="Scroll to the article"
+        style={{
+          position: "fixed",
+          left: 18,
+          top: "50%",
+          transform: "translateY(-50%)",
+          width: 52,
+          height: 52,
+          borderRadius: "50%",
+          border: "none",
+          background: "linear-gradient(135deg, rgba(109, 121, 255, 0.95), rgba(57, 177, 255, 0.95))",
+          boxShadow: "0 20px 40px rgba(40, 106, 255, 0.36)",
+          color: "#fff",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+          zIndex: 2,
+        }}
+      >
+        <ArrowDown size={22} />
+      </button>
 
-      <div style={{ border: isDarkMode ? "1px solid #232b38" : "1px solid rgba(0,0,0,0.04)", borderRadius: 18, padding: 24, background: isDarkMode ? "#10151f" : "#f6ebdc" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 16, alignItems: "center", marginBottom: 16, flexWrap: "wrap" }}>
-          <span style={{ display: "inline-flex", padding: "6px 10px", borderRadius: 999, background: isDarkMode ? "#1e2733" : "#fbf7f1", color: isDarkMode ? "#d0d0d0" : "#7d1017", fontWeight: 800, fontSize: 13 }}>
-            {localizeDigits(article.category, locale)}
-          </span>
-
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-            <Link href={`/${locale}/articles/${slug}`} style={{ padding: "8px 12px", borderRadius: 999, background: "#a61922", color: "#fff", textDecoration: "none", fontWeight: 700 }}>
-              {locale === "fa" ? "نسخه فعلی" : "Current version"}
-            </Link>
-            <button
-              type="button"
-              onClick={() => setIsDarkMode(!isDarkMode)}
-              suppressHydrationWarning
-              style={{ position: "relative", display: "inline-flex", alignItems: "center", width: 50, height: 26, borderRadius: 999, background: isDarkMode ? "#3a3a3a" : "#ddd", border: "none", cursor: "pointer", padding: 0, transition: "background-color 0.3s ease" }}
-            >
-              <span style={{ position: "absolute", width: 22, height: 22, borderRadius: 999, background: isDarkMode ? "#161b24" : "#fff", left: isDarkMode ? 24 : 2, transition: "left 0.3s ease", boxShadow: "0 2px 4px rgba(0,0,0,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }} />
-            </button>
-            <Link href={`/${oppositeLocale}/articles/${slug}`} style={{ padding: "8px 12px", borderRadius: 999, border: `1px solid ${isDarkMode ? "#333" : "#eadfda"}`, color: isDarkMode ? "#e0e0e0" : "#7d1017", textDecoration: "none", fontWeight: 700 }}>
-              {locale === "fa" ? "English version" : "نسخه فارسی"}
-            </Link>
-          </div>
-        </div>
-
-        <h1 style={{ margin: "0 0 8px", fontSize: 32, lineHeight: 1.4, color: isDarkMode ? "#f0f0f0" : "#221f1f", fontWeight: 800 }}>{localizeDigits(article.title, locale)}</h1>
-        <p style={{ margin: "0 0 16px", color: isDarkMode ? "#aaa" : "#686868", fontSize: 15 }}>{localizeDigits(article.description, locale)}</p>
-
-        <div style={{ marginBottom: 24, display: "flex", justifyContent: "flex-start", gap: 12, flexWrap: "wrap" }}>
-          <button
-            type="button"
-            onClick={downloadArticle}
-            style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "10px 16px", borderRadius: 999, background: "linear-gradient(135deg, #8f141c, #bd2731)", color: "#fff", textDecoration: "none", fontWeight: 800, boxShadow: "0 10px 20px rgba(155, 23, 29, 0.18)", border: "none", cursor: "pointer" }}
+      <div
+        style={{
+          width: "min(1240px, 100%)",
+          height: "min(900px, calc(100vh - 48px))",
+          minHeight: 0,
+          borderRadius: 30,
+          background: panelTheme.shell,
+          border: `1px solid ${panelTheme.border}`,
+          backdropFilter: "blur(18px)",
+          WebkitBackdropFilter: "blur(18px)",
+          boxShadow: "0 32px 78px rgba(7, 10, 13, 0.28)",
+          padding: 18,
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        <div
+          style={{
+            background: panelTheme.inner,
+            borderRadius: 24,
+            border: `1px solid ${panelTheme.border}`,
+            minHeight: 0,
+            flex: 1,
+            padding: 20,
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <header
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              alignItems: "center",
+              gap: 11,
+              padding: "4px 4px 16px",
+            }}
           >
-            {isPersian ? "دانلود خروجی مقاله" : "Download article"}
-          </button>
-          {isPersian ? (
-            <Link
-              href="/fa/profile"
-              style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "10px 16px", borderRadius: 999, background: "#fff", color: "#a61922", border: "1px solid rgba(166,25,34,0.22)", textDecoration: "none", fontWeight: 800, boxShadow: "0 8px 18px rgba(166,25,34,0.12)" }}
-            >
-              حاشیه نگار
-            </Link>
-          ) : null}
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12, marginBottom: 24 }}>
-          <div style={{ border: `1px solid ${isDarkMode ? "#28313f" : "#eadfda"}`, borderRadius: 12, padding: 12, background: isDarkMode ? "#151a24" : "#f8efe3" }}>
-            <strong style={{ display: "block", color: isDarkMode ? "#ff7a8a" : "#7d1017", marginBottom: 4 }}>
-              {locale === "fa" ? "نویسنده" : "Author"}
-            </strong>
-            <span style={{ color: isDarkMode ? "#d0d0d0" : "#000" }}>{localizeDigits(article.author, locale)}</span>
-          </div>
-          <div style={{ border: `1px solid ${isDarkMode ? "#28313f" : "#eadfda"}`, borderRadius: 12, padding: 12, background: isDarkMode ? "#151a24" : "#f8efe3" }}>
-            <strong style={{ display: "block", color: isDarkMode ? "#ff7a8a" : "#7d1017", marginBottom: 4 }}>
-              {locale === "fa" ? "صفحه شروع" : "Start page"}
-            </strong>
-            <span style={{ color: isDarkMode ? "#d0d0d0" : "#000" }}>{localizeDigits(article.startPage, locale)}</span>
-          </div>
-          <div style={{ border: `1px solid ${isDarkMode ? "#28313f" : "#eadfda"}`, borderRadius: 12, padding: 12, background: isDarkMode ? "#151a24" : "#f8efe3" }}>
-            <strong style={{ display: "block", color: isDarkMode ? "#ff7a8a" : "#7d1017", marginBottom: 4 }}>
-              {locale === "fa" ? "دسته‌بندی" : "Category"}
-            </strong>
-            <span style={{ color: isDarkMode ? "#d0d0d0" : "#000" }}>{localizeDigits(article.category, locale)}</span>
-          </div>
-        </div>
-
-        <div style={{ display: "flex", gap: 24, alignItems: "flex-start", flexWrap: "wrap", flexDirection: isPersian ? "row-reverse" : "row" }}>
-          <article id="article-body" style={{ flex: "1 1 640px", minWidth: 0 }} onMouseUp={handleTextSelection} onTouchEnd={handleTextSelection}>
-            {articleSections.map((section) => {
-              if (section.kind === "heading") {
-                const headingLevel = section.text.length < 60 ? 3 : 2;
-                const HeadingTag = `h${headingLevel}` as ElementType;
-                return (
-                  <HeadingTag
-                    key={section.id}
-                    style={{ margin: "24px 0 10px", color: isDarkMode ? "#f0f0f0" : "#221f1f", fontWeight: 800, lineHeight: 1.4, fontSize: headingLevel === 3 ? "1.05rem" : "1.25rem" }}
-                  >
-                    {localizeDigits(section.text, locale)}
-                  </HeadingTag>
-                );
-              }
-
-              return (
-                <section key={section.id} style={{ marginBottom: 20, padding: 18, borderRadius: 18, background: isDarkMode ? "#1a1a1a" : "#f8efe3", border: `1px solid ${isDarkMode ? "#333" : "rgba(0,0,0,0.04)"}` }}>
-                  <p style={{ margin: 0, fontSize: 16, color: isDarkMode ? "#d0d0d0" : "#262626", textAlign: "justify", lineHeight: 1.85, whiteSpace: "pre-wrap" }}>
-                    {localizeDigits(section.text, locale)}
-                  </p>
-                </section>
-              );
-            })}
-          </article>
-
-          {isPersian ? <aside style={{ flex: "0 0 min(320px, 100%)", width: "min(320px, 100%)", border: `1px solid ${isDarkMode ? "#333" : "rgba(125,16,23,0.12)"}`, borderRadius: 20, padding: 24, background: isDarkMode ? "linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%)" : "linear-gradient(135deg, #fcf7ee 0%, #f4e9dc 100%)", boxShadow: isDarkMode ? "0 16px 36px rgba(0,0,0,0.5)" : "0 16px 36px rgba(125,16,23,0.08)", position: "sticky", top: 24, maxHeight: "min(600px, 85vh)", display: "flex", flexDirection: "column", gap: 14 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", color: isDarkMode ? "#ff7a8a" : "#7d1017", fontWeight: 800 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: 999, background: isDarkMode ? "rgba(255,122,138,0.2)" : "rgba(166,25,34,0.12)", fontSize: 14 }}>✎</span>
-                  <span>{isPersian ? "جعبه ابزار حاشیه نگار" : "Marginal Notes toolbox"}</span>
-                </div>
-              <button
-                type="button"
-                onClick={() => setIsNotesEnabled(!isNotesEnabled)}
-                suppressHydrationWarning
-                style={{ position: "relative", display: "inline-flex", alignItems: "center", width: 50, height: 26, borderRadius: 999, background: isNotesEnabled ? "#a61922" : isDarkMode ? "#444" : "#ddd", border: "none", cursor: "pointer", padding: 0, transition: "background-color 0.3s ease" }}
-              >
-                <span style={{ position: "absolute", width: 22, height: 22, borderRadius: 999, background: "#fff", left: isNotesEnabled ? 24 : 2, transition: "left 0.3s ease", boxShadow: "0 2px 4px rgba(0,0,0,0.2)" }} />
-              </button>
-            </div>
-            <div style={{ fontSize: 12, lineHeight: 1.7, color: isDarkMode ? "#b3b3b3" : "#6f5d49", background: isDarkMode ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.55)", border: `1px solid ${isDarkMode ? "#232b38" : "rgba(125,16,23,0.08)"}`, borderRadius: 14, padding: "10px 12px" }}>
-              {isPersian
-                ? "این بخش برای ذخیره و به‌اشتراک‌گذاری یادداشت‌های شما با دیگران است. پس از ثبت، یک نسخه روی دستگاه شما ذخیره می‌شود و نسخه‌ای در بخش حاشیه نگار برای عموم منتشر می‌گردد."
-                : "Save and share short notes publicly. When you publish, one copy is saved to your device and another is posted to the Marginal Notes feed."}
-            </div>
-            <textarea
-              value={notesText}
-              onChange={(event) => setNotesText(event.target.value)}
-              disabled={!isNotesEnabled}
-              placeholder={isPersian ? "یادداشت نوشتن..." : "Write your note..."}
-              style={{ width: "calc(100% - 22px)", flex: 1, minHeight: 240, resize: "none", border: isDarkMode ? "1px solid #2b3240" : "1px solid rgba(125,16,23,0.12)", borderRadius: 14, padding: 12, marginLeft: 8, background: isNotesEnabled ? (isDarkMode ? "#1e222d" : "#fffdf9") : (isDarkMode ? "#15171f" : "#f5f5f5"), color: isNotesEnabled ? (isDarkMode ? "#e0e0e0" : "#262626") : (isDarkMode ? "#777" : "#999"), fontSize: 14, lineHeight: 1.8, fontFamily: "inherit", overflowY: "auto", boxShadow: isDarkMode ? "inset 0 1px 3px rgba(0,0,0,0.3)" : "inset 0 1px 3px rgba(125,16,23,0.05)", opacity: isNotesEnabled ? 1 : 0.6 }}
-            />
             <button
               type="button"
-              onClick={saveNote}
-              disabled={!notesText.trim() || !isNotesEnabled}
-              style={{ width: "100%", border: "none", borderRadius: 999, padding: "12px 14px", background: "#a61922", color: "#fff", cursor: (!notesText.trim() || !isNotesEnabled) ? "not-allowed" : "pointer", fontWeight: 700, fontSize: 13, opacity: (!notesText.trim() || !isNotesEnabled) ? 0.6 : 1 }}
+              style={{
+                borderRadius: 999,
+                border: `1px solid ${panelTheme.border}`,
+                background: panelTheme.button,
+                color: panelTheme.text,
+                width: 132,
+                height: 40,
+                padding: "0 16px",
+                fontSize: 13,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                cursor: "pointer",
+              }}
             >
-              {isPersian ? "ذخیره یادداشت" : "Save note"}
+              <Share2 size={14} />
+              Share
             </button>
-            <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
-              <button
-                type="button"
-                onClick={handleClearNotes}
-                disabled={!notesText.trim()}
-                style={{ width: "100%", borderRadius: 999, padding: "12px 14px", background: isDarkMode ? "#2a2e3a" : "#fff", color: isDarkMode ? "#e0e0e0" : "#a61922", cursor: !notesText.trim() ? "not-allowed" : "pointer", fontWeight: 700, fontSize: 13, border: `1px solid ${isDarkMode ? "#222" : "rgba(166,25,34,0.18)"}` }}
+
+            <Link
+              href={`/${locale}/archive`}
+              style={{
+                borderRadius: 999,
+                background: panelTheme.action,
+                color: "#fff",
+                fontWeight: 700,
+                width: 132,
+                height: 40,
+                padding: "0 16px",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                textDecoration: "none",
+                fontSize: 13,
+                boxShadow: "0 10px 26px rgba(36, 108, 255, 0.38)",
+              }}
+            >
+              Close & Return
+            </Link>
+
+            <button
+              type="button"
+              aria-label="Toggle theme"
+              onClick={() => setIsDarkMode((current) => !current)}
+              style={{
+                borderRadius: 999,
+                border: `1px solid ${panelTheme.border}`,
+                background: panelTheme.button,
+                width: 132,
+                height: 40,
+                padding: "4px 9px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                cursor: "pointer",
+                color: panelTheme.text,
+              }}
+            >
+              <SunMedium size={16} style={{ opacity: isDarkMode ? 0.35 : 1 }} />
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 28,
+                  height: 28,
+                  borderRadius: "50%",
+                  background: isDarkMode ? "rgba(255,255,255,0.9)" : "#357bd8",
+                  color: isDarkMode ? "#1a1d22" : "#fff",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
+                }}
               >
-                {isPersian ? "پاک کردن یادداشت" : "Clear note"}
-              </button>
-            </div>
-            {feedbackMessage ? (
-              <div style={{ marginTop: 12, borderRadius: 18, background: feedbackType === "success" ? "#f3fbf6" : "#fff1f0", border: `1px solid ${feedbackType === "success" ? "rgba(64, 160, 80, 0.18)" : "rgba(220, 53, 69, 0.18)"}`, color: feedbackType === "success" ? "#2b6d35" : "#842029", padding: 14, fontSize: 14 }}>
-                {feedbackMessage}
+                {isDarkMode ? <MoonStar size={14} /> : <SunMedium size={14} />}
+              </span>
+              <MoonStar size={16} style={{ opacity: isDarkMode ? 1 : 0.35 }} />
+            </button>
+
+            <Link
+              href={`/${locale}/archive`}
+              aria-label="Close"
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: "50%",
+                border: `1px solid ${panelTheme.border}`,
+                background: panelTheme.button,
+                color: panelTheme.text,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                textDecoration: "none",
+              }}
+            >
+              <X size={16} />
+            </Link>
+          </header>
+
+          <section
+            ref={articleRef}
+            style={{
+              background: panelTheme.section,
+              borderRadius: 22,
+              border: `1px solid ${panelTheme.border}`,
+              padding: 28,
+              minHeight: 0,
+              overflowY: "auto",
+              scrollbarWidth: "thin",
+              scrollbarColor: "rgba(88, 170, 255, 0.9) rgba(255,255,255,0.08)",
+            }}
+          >
+            <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+              <div style={{ fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", color: panelTheme.muted, fontWeight: 600 }}>
+                Title
               </div>
-            ) : null}
-          </aside> : null}
+
+              <h1
+                style={{
+                  margin: "12px 0 0",
+                  fontSize: "clamp(2.3rem, 3.5vw, 4.1rem)",
+                  lineHeight: 1.08,
+                  letterSpacing: "-0.05em",
+                  fontWeight: 700,
+                  color: panelTheme.strong,
+                }}
+              >
+                {article.title}
+              </h1>
+
+              <div style={{ height: 1, background: panelTheme.divider, margin: "20px 0 28px" }} />
+
+              <article style={{ color: panelTheme.text, fontSize: 17, lineHeight: 1.9 }}>
+                {sections.map((section) => {
+                  if (section.kind === "heading") {
+                    return (
+                      <h2
+                        key={section.id}
+                        style={{
+                          margin: "24px 0 12px",
+                          color: panelTheme.strong,
+                          fontSize: "1.25rem",
+                          fontWeight: 700,
+                          lineHeight: 1.4,
+                        }}
+                      >
+                        {section.text}
+                      </h2>
+                    );
+                  }
+
+                  return (
+                    <p key={section.id} style={{ margin: "0 0 18px", color: panelTheme.text }}>
+                      {section.text}
+                    </p>
+                  );
+                })}
+              </article>
+            </div>
+          </section>
         </div>
       </div>
-      {referenceSections.length > 0 ? (
-        <section style={{ marginTop: 32, fontSize: 14, lineHeight: 1.7, color: isDarkMode ? "#c4c4c4" : "#4a4a4a", background: isDarkMode ? "#10131a" : "transparent", padding: isDarkMode ? "20px 22px 18px" : undefined, borderRadius: isDarkMode ? 18 : undefined }}>
-          {referenceSections.map((section) => {
-            if (section.kind === "heading") {
-              return (
-                <h3 key={section.id} style={{ margin: "0 0 12px", fontSize: 16, fontWeight: 700, color: isDarkMode ? "#f0f0f0" : "#221f1f" }}>
-                  {localizeDigits(section.text, locale)}
-                </h3>
-              );
-            }
-            return (
-              <p key={section.id} style={{ margin: "0 0 10px", fontSize: 14, color: isDarkMode ? "#c4c4c4" : "#4a4a4a", textAlign: isPersian ? "right" : "left" }}>
-                {localizeDigits(section.text, locale)}
-              </p>
-            );
-          })}
-        </section>
-      ) : null}
     </main>
   );
 }

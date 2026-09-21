@@ -1,5 +1,5 @@
-import ArchivePage from "@/components/archive/ArchivePage";
+import EnglishArchivePage from "@/components/archive/EnglishArchivePage";
 
 export default function EnArchivePage() {
-  return <ArchivePage locale="en" />;
+  return <EnglishArchivePage />;
 }

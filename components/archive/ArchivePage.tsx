@@ -35,7 +35,7 @@ const archiveArticles = articles.map((article) => ({
   featured: article.startPage === 2,
 }));
 
-const encyclopediaParts: Part[] = [
+export const encyclopediaParts: Part[] = [
   {
     id: "part-1",
     number: "I",
