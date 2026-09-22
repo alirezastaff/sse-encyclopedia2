@@ -4,6 +4,364 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Viewport-locked dashboard layouts for the two tool surfaces. */
+.case-page {
+  height: 100dvh;
+  min-height: 0 !important;
+  overflow: hidden;
+}
+
+.case-page .case-app {
+  height: 100%;
+  min-height: 0;
+}
+
+.case-page .case-content {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.case-page .case-heading {
+  margin-bottom: 12px;
+}
+
+.case-page .case-toolbar {
+  flex: none;
+  margin-bottom: 10px;
+}
+
+.case-page .case-grid {
+  flex: 1;
+  min-height: 0;
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  overflow: hidden;
+}
+
+.case-page .case-card-image {
+  height: clamp(58px, 9vh, 92px);
+}
+
+.case-page .case-card-body {
+  padding: 8px 10px 9px;
+}
+
+.case-page .case-card h2 {
+  font-size: clamp(13px, 1.25vw, 17px);
+}
+
+.case-page .case-card p {
+  font-size: 9px;
+  line-height: 1.25;
+}
+
+.case-page .case-place,
+.case-page .case-metric {
+  margin-top: 6px;
+  font-size: 9px;
+}
+
+.case-page .case-footer {
+  flex: none;
+  margin-top: 9px;
+}
+
+@media (max-width: 1050px) and (min-width: 681px) {
+  .case-page .case-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .case-page .case-app {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .case-page .case-sidebar {
+    flex: none;
+  }
+
+  .case-page .case-content {
+    flex: 1;
+    padding: 10px 12px 12px;
+  }
+
+  .case-page .case-topbar {
+    min-height: 34px;
+  }
+
+  .case-page .case-search {
+    height: 34px;
+  }
+
+  .case-page .case-back {
+    padding: 0 9px;
+    font-size: 0;
+  }
+
+  .case-page .case-heading {
+    display: block;
+    margin: 10px 0 7px;
+  }
+
+  .case-page .case-heading h1 {
+    margin: 6px 0 5px;
+    font-size: clamp(28px, 9vw, 40px);
+  }
+
+  .case-page .case-heading p {
+    font-size: 10px;
+    line-height: 1.25;
+  }
+
+  .case-page .case-signal,
+  .case-page .case-footer {
+    display: none;
+  }
+
+  .case-page .case-toolbar {
+    flex-wrap: nowrap;
+    gap: 5px;
+    margin-bottom: 7px;
+    overflow: hidden;
+  }
+
+  .case-page .case-filter {
+    flex: none;
+    padding: 6px 9px;
+    font-size: 8px;
+    white-space: nowrap;
+  }
+
+  .case-page .case-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .case-page .case-card {
+    border-radius: 9px;
+  }
+
+  .case-page .case-card-image {
+    height: clamp(36px, 8vh, 65px);
+    margin: 4px 4px 0;
+    border-radius: 7px;
+  }
+
+  .case-page .case-badge {
+    top: 4px;
+    left: 4px;
+    max-width: 75%;
+    padding: 3px 5px;
+    overflow: hidden;
+    font-size: 7px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .case-page .case-card-body {
+    padding: 5px 6px;
+  }
+
+  .case-page .case-card h2 {
+    font-size: 11px;
+  }
+
+  .case-page .case-card p {
+    display: none;
+  }
+
+  .case-page .case-place,
+  .case-page .case-metric {
+    gap: 3px;
+    margin-top: 3px;
+    font-size: 7px;
+  }
+}
+
+.impact-dashboard {
+  min-height: 0 !important;
+}
+
+@media (min-width: 681px) {
+  .impact-dashboard {
+    height: 100dvh;
+    overflow: hidden;
+  }
+}
+
+@media (max-width: 680px) {
+  .impact-dashboard {
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+    padding: 8px;
+  }
+
+  .impact-dashboard-inner {
+    height: 100%;
+    display: grid;
+    grid-template-rows: 28px 78px 92px minmax(0, 1fr) 38px 12px;
+    gap: 5px;
+  }
+
+  .impact-dashboard .dashboard-nav,
+  .impact-dashboard .dashboard-hero,
+  .impact-dashboard .dashboard-kpis,
+  .impact-dashboard .dashboard-grid,
+  .impact-dashboard .dashboard-scenario,
+  .impact-dashboard .dashboard-footer {
+    min-height: 0;
+    margin: 0;
+  }
+
+  .impact-dashboard .dashboard-nav {
+    height: 28px;
+  }
+
+  .impact-dashboard .dashboard-hero {
+    height: 78px;
+    display: flex;
+    gap: 10px;
+    overflow: hidden;
+  }
+
+  .impact-dashboard .dashboard-hero h1 {
+    margin: 4px 0;
+    font-size: 30px;
+  }
+
+  .impact-dashboard .dashboard-hero p {
+    font-size: 9px;
+    line-height: 1.25;
+  }
+
+  .impact-dashboard .dashboard-note {
+    max-width: 145px;
+    padding: 8px;
+  }
+
+  .impact-dashboard .dashboard-note span {
+    font-size: 8px;
+    line-height: 1.25;
+  }
+
+  .impact-dashboard .dashboard-kpis {
+    height: 92px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 5px;
+  }
+
+  .impact-dashboard .impact-kpi {
+    min-height: 0;
+    padding: 7px;
+  }
+
+  .impact-dashboard .impact-kpi strong {
+    font-size: 15px;
+  }
+
+  .impact-dashboard .dashboard-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 122px;
+    gap: 5px;
+    overflow: hidden;
+  }
+
+  .impact-dashboard .dashboard-sidebar {
+    display: none;
+  }
+
+  .impact-dashboard .dashboard-workspace,
+  .impact-dashboard .dashboard-result {
+    min-height: 0;
+    height: auto;
+    overflow: hidden;
+  }
+
+  .impact-dashboard .workspace-body {
+    min-height: 0;
+    height: auto;
+    padding: 12px;
+    overflow: hidden;
+  }
+
+  .impact-dashboard .dashboard-section-head {
+    margin-bottom: 8px;
+  }
+
+  .impact-dashboard .dashboard-section-head h2 {
+    font-size: 17px;
+  }
+
+  .impact-dashboard .dashboard-section-head p {
+    font-size: 8px;
+    line-height: 1.2;
+  }
+
+  .impact-dashboard .overview-panels,
+  .impact-dashboard .dashboard-fields {
+    gap: 5px;
+  }
+
+  .impact-dashboard .overview-chart-content {
+    grid-template-columns: 72px 1fr;
+    gap: 6px;
+    margin-top: 5px;
+  }
+
+  .impact-dashboard .dashboard-donut {
+    width: 65px;
+  }
+
+  .impact-dashboard .dashboard-chart,
+  .impact-dashboard .dashboard-output,
+  .impact-dashboard .dashboard-waterfall {
+    padding: 7px;
+  }
+
+  .impact-dashboard .dashboard-result {
+    display: block;
+    padding: 9px;
+  }
+
+  .impact-dashboard .dashboard-result > small {
+    margin-top: 10px;
+    font-size: 8px;
+  }
+
+  .impact-dashboard .result-number {
+    font-size: 25px;
+  }
+
+  .impact-dashboard .result-donut {
+    width: 76px;
+    margin: 8px auto;
+  }
+
+  .impact-dashboard .dashboard-download {
+    min-height: 27px;
+    margin-top: 10px;
+    padding-inline: 4px;
+    font-size: 8px;
+  }
+
+  .impact-dashboard .dashboard-scenario {
+    height: 38px;
+    padding: 5px 8px;
+    overflow: hidden;
+  }
+
+  .impact-dashboard .dashboard-footer {
+    height: 12px;
+    overflow: hidden;
+    font-size: 7px;
+  }
+}
+
 body {
   font-family: "Vazirmatn", Tahoma, Arial, sans-serif;
   margin: 0;
@@ -12,6 +370,277 @@ body {
   color: #111;
   min-height: 100vh;
   transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Reference /en dashboard refinements. */
+html:has(.reference-home),
+html:has(.reference-home) body {
+  width: 100%;
+  height: 100%;
+}
+
+@media (min-width: 681px) {
+  html:has(.reference-home),
+  html:has(.reference-home) body {
+    overflow: hidden;
+  }
+
+  .reference-home {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    user-select: none !important;
+  }
+
+  .reference-shell {
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  .reference-shell::before {
+    background-size: auto, cover, auto !important;
+  }
+
+  .reference-hero h1 {
+    font-size: 38px !important;
+  }
+
+  .reference-header {
+    padding-top: 11px;
+    padding-bottom: 11px;
+  }
+
+  .reference-logo {
+    width: auto;
+    height: calc(100% - 28px);
+    max-width: 190px;
+  }
+
+  .reference-card h2 {
+    font-size: 24px !important;
+  }
+}
+
+@media (min-width: 681px) {
+  .reference-hero p {
+    max-width: 390px !important;
+    font-size: 10px !important;
+    line-height: 1.35 !important;
+  }
+
+  .reference-grid {
+    grid-template-columns: repeat(12, minmax(0, 1fr)) 280px !important;
+    column-gap: 19px;
+  }
+
+  .reference-categories {
+    grid-column: 13 !important;
+    width: 280px;
+    margin-left: 0;
+  }
+}
+
+.reference-card .card-button {
+  max-width: 100%;
+  white-space: nowrap;
+  padding-inline: 10px;
+  position: absolute;
+  right: 11px;
+  bottom: 11px;
+  margin-top: 0;
+}
+
+.reference-hero {
+  transform: translateY(-19px);
+}
+
+.reference-hero > .reference-kicker,
+.reference-hero > h1 {
+  transform: translateX(-38px);
+}
+
+.reference-feature {
+  right: 0;
+  top: 28px !important;
+  bottom: -12px;
+  width: 280px;
+  height: auto;
+  z-index: 3;
+}
+
+.reference-feature .reference-feature-tag,
+.reference-feature h2,
+.reference-feature p {
+  display: none !important;
+}
+
+.reference-feature::before {
+  content: "What Is a Knowledge Platform?";
+  display: block;
+  margin-bottom: 12px;
+  color: #f5fff8;
+  font: normal 23px/1.05 'DM Serif Display', Georgia, serif;
+}
+
+.reference-feature::after {
+  content: "A space for bringing together, exploring, and sharing knowledge, research, experiences, and ideas related to the social and solidarity economy.";
+  display: block;
+  color: rgba(247, 255, 250, 0.88);
+  font-size: 11px;
+  line-height: 1.45;
+  text-align: justify;
+}
+
+.reference-hero > p:not(.reference-kicker) {
+  display: none;
+}
+
+.reference-round-button {
+  display: none !important;
+}
+
+.reference-categories .reference-category-tag,
+.reference-categories h2,
+.reference-categories ul {
+  display: none !important;
+}
+
+.reference-categories::before {
+  content: "A Different Perspective on the Economy";
+  display: block;
+  margin-bottom: 12px;
+  color: #f5fff8;
+  font: normal 22px/1.08 'DM Serif Display', Georgia, serif;
+}
+
+.reference-categories::after {
+  content: "The economy is more than what we encounter in economics textbooks or market charts. This platform brings together diverse ideas, research, real-world experiences, and innovative examples to broaden your understanding of how economies work. Here, you can discover different approaches and experiences, learn about a wide range of topics, explore real-world examples of the social and solidarity economy, and engage with others in developing knowledge and shaping the conversation around it.";
+  display: block;
+  color: rgba(248, 255, 251, 0.88);
+  font-size: 10px;
+  line-height: 1.55;
+  text-align: justify;
+}
+
+.reference-card .card-body {
+  align-items: flex-start;
+  justify-content: flex-start !important;
+  text-align: left;
+  padding: 10px 20px 20px !important;
+}
+
+.reference-card .card-heading,
+.reference-card h2,
+.reference-card p {
+  width: 100%;
+}
+
+.reference-card .card-heading {
+  justify-content: flex-start;
+}
+
+.reference-card h2 {
+  font-size: 19px !important;
+}
+
+.reference-search .knowledge-search-wrap {
+  width: 560px !important;
+  min-width: 0;
+  margin: 0 !important;
+}
+
+.reference-search {
+  position: relative;
+  top: -47px;
+  left: -38px;
+  padding-left: 0;
+}
+
+.reference-search .knowledge-search {
+  display: flex !important;
+  width: 100% !important;
+  min-width: 0;
+  height: 42px;
+  gap: 10px;
+  padding: 4px 6px 4px 14px;
+  overflow: hidden;
+  background: rgba(12, 55, 58, 0.38) !important;
+  border-color: rgba(235, 255, 245, 0.62) !important;
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.38), 0 8px 22px rgba(4, 34, 33, 0.2) !important;
+  backdrop-filter: blur(18px) saturate(145%);
+  -webkit-backdrop-filter: blur(18px) saturate(145%);
+}
+
+.reference-search .search-placeholder {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  appearance: none;
+  -webkit-appearance: none;
+  border-radius: 0;
+  color: #f4fff8 !important;
+  font-size: 10px;
+  padding: 0;
+}
+
+.reference-search .search-placeholder {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+}
+
+.reference-search .search-divider {
+  display: none;
+}
+
+.reference-search .search-filter {
+  flex: 0 0 auto;
+  padding: 0 10px;
+  color: rgba(247, 255, 251, 0.88);
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.reference-search .search-glass {
+  flex: 0 0 auto;
+  width: 16px;
+  color: #e2f9ec;
+}
+
+.reference-home .reference-tools > svg {
+  display: none;
+}
+
+@media (min-width: 681px) {
+  .reference-shell {
+    grid-template-rows: 58px minmax(0, 1fr) 40px minmax(0, 1.9fr);
+  }
+
+  .reference-grid {
+    height: calc(100% + 38px);
+    margin-top: 0;
+    transform: translateY(-38px);
+  }
+
+  .reference-categories {
+    margin-top: 0;
+  }
+}
+
+@media (max-width: 680px) {
+  html:has(.reference-home) body {
+    overflow: hidden;
+  }
+
+  .reference-hero h1 {
+    font-size: clamp(28px, 7vw, 38px) !important;
+  }
+
+  .reference-search .knowledge-search-wrap {
+    width: 100% !important;
+  }
 }
 
 /* Dark Mode */

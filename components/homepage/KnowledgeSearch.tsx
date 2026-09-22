@@ -33,9 +33,6 @@ export default function KnowledgeSearch({ locale }: KnowledgeSearchProps) {
         <span className="search-filter">{isFa ? "همه محتوا　⌄" : "All content　⌄"}</span>
         <span className="search-divider" aria-hidden="true" />
         <span className="search-filter">{isFa ? "همه دسته‌ها　⌄" : "All categories　⌄"}</span>
-        <button className="search-submit" type="submit" aria-label={isFa ? "جست‌وجو" : "Search"}>
-          <Search size={17} />
-        </button>
       </form>
       {submittedQuery && (
         <p className="search-feedback" role="status">
